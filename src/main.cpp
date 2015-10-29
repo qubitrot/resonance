@@ -74,12 +74,6 @@ int main(int argc, char* argv[])
         driver->readBasis(basisFile);
     }
 
-    driver->targetState = 0;
-    driver->generateBasis(20);
-    driver->targetState = 1;
-    driver->generateBasis(30);
-    driver->targetState = 2;
-
     for (int i=0; i<1000; ++i) {
         driver->generateBasis(20);
         driver->writeBasis(outdir+"/basis.json");
@@ -217,9 +211,9 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
     std::cout << "Parsing Driver\n";
 
     const Json::Value JDriver = root["driver"];
-    driver->targetState    = JDriver.get("target",0).asInt();
-    driver->trialSize      = JDriver.get("trialSize",1).asInt();
-    driver->numThreads     = JDriver.get("threads",1).asInt();
-    driver->overlapLimit   = JDriver.get("overlapLimit",0.97).asDouble();
-    driver->forceDiversity = JDriver.get("forceDiversity",0).asInt();
+    driver->targetState      = JDriver.get("target",0).asInt();
+    driver->trialSize        = JDriver.get("trialSize",1).asInt();
+    driver->numThreads       = JDriver.get("threads",1).asInt();
+    driver->singularityLimit = JDriver.get("singularityLimit",5e-15).asDouble();
+    driver->forceDiversity   = JDriver.get("forceDiversity",0).asInt();
 }

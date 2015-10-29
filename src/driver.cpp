@@ -8,7 +8,7 @@ Driver::Driver(System* sys, Solver* sol, SampleSpace* ss)
     : targetState(0)
     , trialSize(0)
     , numThreads(1)
-    , overlapLimit(0.98)
+    , singularityLimit(5e-14)
     , forceDiversity(false)
     , system(sys)
     , solver(sol)
@@ -27,18 +27,7 @@ Basis Driver::generateTrials(uint n)
 
         int strainN = -1;
         if (forceDiversity) strainN = sampleSpace->chooseStrain();
-
-        bool overlapProblem;
-        do {
-            cg = sampleSpace->genMatrix(strainN);
-            overlapProblem = false;
-            for (unsigned k=0; k<basis.size(); ++k) {
-                if (solver->overlap(cg,basis[k]) > overlapLimit) {
-                    overlapProblem = true;
-                    break;
-                }
-            }
-        } while (overlapProblem);
+        cg = sampleSpace->genMatrix(strainN);
 
         trials.push_back(cg);
     }
@@ -66,8 +55,8 @@ Basis Driver::generateBasis(uint size)
             caches.push_back(new SolverResults);
             *caches[i] = basisCache;
             threads.push_back(
-                    std::thread(Driver::findBestAddition,candidates[i],this,
-                                generateTrials(trialSize),caches[i],targetState,0)
+                    std::thread(Driver::findBestAddition,candidates[i],this,generateTrials(trialSize),
+                                caches[i],targetState,0,singularityLimit)
             );
         }
 
@@ -76,12 +65,16 @@ Basis Driver::generateBasis(uint size)
             it->join();
         }
 
+        bool redo = true; //to accomidate the possibility that all trials
+                          //exhibit too much linear dependance.
+
         CGaussian best = candidates[0]->first;
         complex   bev  = candidates[0]->second;
         basisCache = *caches[0];
         for (uint i=0; i<candidates.size(); ++i) {
             auto c = candidates[i];
-            if (c->second.real() < bev.real()) {
+            if (c->first.A.rows() != 0 && c->second.real() <= bev.real()) {
+                redo = false;
                 best = c->first;
                 bev  = c->second;
                 basisCache = *caches[i];
@@ -90,24 +83,26 @@ Basis Driver::generateBasis(uint size)
             delete caches[i];
         }
 
-        basis.push_back(best);
-        convergenceData.push_back(bev);
+        if (!redo) {
+            basis.push_back(best);
+            convergenceData.push_back(bev);
 
-        if (basis.size() > targetState) {
-            std::cout << "E = " << std::setprecision(18) << bev << "\n";
+            if (basis.size() > targetState) {
+                std::cout << "E = " << std::setprecision(18) << bev << "\n";
+            } else {
+                std::cout << "\n";
+            }
         } else {
-            std::cout << "\n";
+            std::cout << "REDO: Too much linear dependance.\n";
+            s--;
         }
-
-        //std::cout << "____\n";
-        //for (auto b : basis) std::cout << "A:\n" << b.A << "\n\n";
     }
 
     return basis;
 }
 
 void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver, Basis trials,
-                              SolverResults* bcache, uint target, real theta)
+                              SolverResults* bcache, uint target, real theta, real singularityLimit)
 {
     CGaussian best;
     complex lowestEV = complex(0,0);
@@ -117,6 +112,8 @@ void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver,
     if (target >= driver->basis.size())
         target  = driver->basis.size();
 
+    out->first.A.resize(0,0); //"uninitialized" used for redo check
+
     for (auto cg : trials) {
         Basis test = driver->basis;
         test.push_back(cg);
@@ -125,11 +122,22 @@ void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver,
 
         std::vector<complex> ev = cache.eigenvalues;
         if (lowestEV == complex(0,0) || ev[target].real() < lowestEV.real()) {
-            out->first  = cg;
-            out->second = ev[target];
-            *bcache     = cache;
+            //Make sure there's not too much linear dependance
+            Eigen::JacobiSVD<MatrixXr> svd(cache.O);
+            real lowestSV = svd.singularValues()(0);
+            for (uint i=0; i<svd.singularValues().rows(); ++i) {
+                if (svd.singularValues()(i) < lowestSV) lowestSV = svd.singularValues()(i);
+            }
+
+            if (lowestSV > singularityLimit) {
+                out->first  = cg;
+                out->second = ev[target];
+                *bcache     = cache;
+            }
         }
     }
+
+
 }
 
 void Driver::sweepAngle(uint steps, real stepsize)
