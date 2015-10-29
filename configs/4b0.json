@@ -1,0 +1,91 @@
+{
+    "queue" : [
+        "read",
+        "generate"
+    ],
+
+    "driver" : {
+        "target"       : 0,
+        "threads"      : 1,
+        "basisMax"     : 60,
+        "trialSize"    : 100, //per thread
+        "overlapLimit" : 0.97
+    },
+
+    "particles" : [
+        {
+            "name"  : "boson1",
+            "type"  : "boson",
+            "count" : 4,
+            "mass"  : 1,
+            "identicality" : 1
+        }
+    ],
+
+    "trappingPotential" : {
+        "type" : "none"
+    },
+
+    "interactions" : [
+        {
+            "pair" : ["boson1","boson1"],
+            "type" : "gaussian",
+            "V0"   : -14.911136947,
+            "r0"   : 0.3
+        }
+    ],
+
+    "sampleSpace" : {
+        "distributions" : [
+            {
+                "name" : "order1",
+                "type" : "uniform",
+                "min"  : 0,
+                "max"  : 4
+            },
+            {
+                "name" : "order10",
+                "type" : "uniform",
+                "min"  : 4,
+                "max"  : 30
+            },
+            {
+                "name" : "order100",
+                "type" : "uniform",
+                "min"  : 30,
+                "max"  : 100
+            }
+        ],
+
+        "strains" : [
+            {
+                "frequency" : 2, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson1" ],
+                        "distribution" : "order1"
+                    }
+                ]
+            },
+            {
+                "frequency" : 0, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson1" ],
+                        "distribution" : "order10"
+                    }
+                ]
+            },
+            {
+                "frequency" : 0, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson1" ],
+                        "distribution" : "order100"
+                    }
+                ]
+            }
+
+        ]
+    }
+}

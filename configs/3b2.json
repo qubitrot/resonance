@@ -1,0 +1,89 @@
+{
+    "driver" : {
+        "target"       : 2,
+        "threads"      : 8,
+        "basisMax"     : 4,
+        "trialSize"    : 100, //per thread
+        "overlapLimit" : 0.95,
+        "forceDiversity" : 1
+    },
+
+    "particles" : [
+        {
+            "name"  : "boson1",
+            "type"  : "boson",
+            "count" : 3,
+            "mass"  : 1,
+            "identicality" : 1
+        }
+    ],
+
+    "trappingPotential" : {
+        "type" : "none"
+    },
+
+    "interactions" : [
+        {
+            "pair" : ["boson1","boson1"],
+            "type" : "gaussian",
+           // "V0"   : -98.86499748,
+            "V0"   : -14.911136947,
+            "r0"   : 0.3
+        }
+    ],
+
+    "sampleSpace" : {
+        "distributions" : [
+            {
+                "name" : "order1",
+                "type" : "uniform",
+                "min"  : 0,
+                "max"  : 6
+            },
+            {
+                "name" : "order10",
+                "type" : "uniform",
+                "min"  : 6, 
+                "max"  : 60
+            },
+            {
+                "name" : "order100",
+                "type" : "uniform",
+                "min"  : 60, 
+                "max"  : 600
+            }
+
+        ],
+
+        "strains" : [
+            {
+                "frequency" : 1, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson1" ],
+                        "distribution" : "order1"
+                    }
+                ]
+            },
+            {
+                "frequency" : 4, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson1" ],
+                        "distribution" : "order10"
+                    }
+                ]
+            },
+            {
+                "frequency" : 3, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson1" ],
+                        "distribution" : "order100"
+                    }
+                ]
+            }
+
+        ]
+    }
+}
