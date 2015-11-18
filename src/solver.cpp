@@ -83,10 +83,10 @@ SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults&
 
 #ifdef DEBUG_BUILD
     assert(cache.H.rows() == size ||
-           cache.H.rows() == size +1);
+           cache.H.rows() == size -1);
     assert(row < size);
 
-    if (cache.H.rows() == size+1) {
+    if (cache.H.rows() == size-1) {
         assert(row+1 == size);
     }
 #endif
@@ -146,7 +146,6 @@ SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults&
 SolverResults CpuSolver::compute(MatrixXc& H, MatrixXr& O)
 {
     Eigen::ComplexEigenSolver<MatrixXc> eigenSolver;
-    //eigenSolver.compute(H,O.cast<complex>());
     eigenSolver.compute(H*O.inverse().cast<complex>());
 
     VectorXc eigenvals = eigenSolver.eigenvalues().cast<complex>();
@@ -195,6 +194,17 @@ SolverResults CpuSolver::computeHermition(MatrixXc& H, MatrixXr& O)
 
     return out;
 }
+
+/*SolverResults CpuSolver::MAGMAcomputeHermition(MatrixXc& H, MatrixXc& O)
+{
+    double* w;
+    double* A;
+    double* B;
+    double* work;
+
+    magma_int_t n    = H.rows();
+    magma_int_t code = magma_dsygvd(1,MagmaNoVec,MagmaUpper,n,A,n,B,n,work,);
+}*/
 
 real CpuSolver::overlap(const CGaussian& A, const CGaussian& B)
 {

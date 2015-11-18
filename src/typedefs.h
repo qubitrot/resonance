@@ -33,6 +33,7 @@ typedef struct {
     MatrixXr A;
     MatrixXr widths;
     real norm;
+    uint strain;
 } CGaussian;
 
 typedef std::vector<CGaussian> Basis;

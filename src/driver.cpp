@@ -21,14 +21,12 @@ Driver::~Driver()
 Basis Driver::generateTrials(uint n)
 {
     Basis trials;
+    int strainN = -1;
+    if (forceDiversity) strainN = sampleSpace->chooseStrain();
 
     for (uint s=0; s<n; ++s) {
         CGaussian cg;
-
-        int strainN = -1;
-        if (forceDiversity) strainN = sampleSpace->chooseStrain();
         cg = sampleSpace->genMatrix(strainN);
-
         trials.push_back(cg);
     }
 
@@ -48,7 +46,14 @@ Basis Driver::generateBasis(uint size)
         std::vector<SolverResults*> caches;
         std::vector<std::thread> threads;
 
-        std::cout << "target: " << targetState << "    ";
+        real targetenergy = -0.02;
+        if (basisCache.eigenvalues.size() > targetState &&
+            basisCache.eigenvalues[targetState].real() < targetenergy &&
+            basisCache.eigenvalues[targetState+1].real() != 0) {
+            targetState++;
+        }
+
+        std::cout << "target: " << targetState << "  ";
 
         for (uint i=0; i<numThreads; ++i) {
             candidates.push_back(new std::pair<CGaussian,complex>);
@@ -87,8 +92,11 @@ Basis Driver::generateBasis(uint size)
             basis.push_back(best);
             convergenceData.push_back(bev);
 
-            if (basis.size() > targetState) {
-                std::cout << "E = " << std::setprecision(18) << bev << "\n";
+            std::cout << "strain: " << best.strain << "  ";
+
+            if (basis.size() > targetState + 1) {
+                std::cout << "E = " << std::setprecision(18) << bev << "\t";
+                std::cout << "E = " << std::setprecision(18) << basisCache.eigenvalues[targetState+1] << "\n";
             } else {
                 std::cout << "\n";
             }
@@ -96,6 +104,8 @@ Basis Driver::generateBasis(uint size)
             std::cout << "REDO: Too much linear dependance.\n";
             s--;
         }
+
+        sampleSpace->learnStrain(best.strain,0);
     }
 
     return basis;
@@ -114,6 +124,8 @@ void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver,
 
     out->first.A.resize(0,0); //"uninitialized" used for redo check
 
+    std::stack< std::tuple<CGaussian,complex,SolverResults> > stack;
+
     for (auto cg : trials) {
         Basis test = driver->basis;
         test.push_back(cg);
@@ -122,22 +134,34 @@ void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver,
 
         std::vector<complex> ev = cache.eigenvalues;
         if (lowestEV == complex(0,0) || ev[target].real() < lowestEV.real()) {
-            //Make sure there's not too much linear dependance
-            Eigen::JacobiSVD<MatrixXr> svd(cache.O);
-            real lowestSV = svd.singularValues()(0);
-            for (uint i=0; i<svd.singularValues().rows(); ++i) {
-                if (svd.singularValues()(i) < lowestSV) lowestSV = svd.singularValues()(i);
-            }
-
-            if (lowestSV > singularityLimit) {
-                out->first  = cg;
-                out->second = ev[target];
-                *bcache     = cache;
-            }
+            stack.push(
+                    std::make_tuple(cg,ev[target],cache)
+            );
+            lowestEV = ev[target];
         }
     }
 
+    while (!stack.empty()) {
+        auto candidate = stack.top();
+        MatrixXr& O    = std::get<2>(candidate).O;
 
+        //Make sure there's not too much linear dependance
+        Eigen::JacobiSVD<MatrixXr> svd(O);
+        real lowestSV = svd.singularValues()(0);
+        for (uint i=0; i<svd.singularValues().rows(); ++i) {
+            if (svd.singularValues()(i) < lowestSV) lowestSV = svd.singularValues()(i);
+        }
+
+        if (lowestSV > singularityLimit) {
+            out->first  = std::get<0>(candidate);
+            out->second = std::get<1>(candidate);
+            *bcache     = std::get<2>(candidate);
+
+            break;
+        }
+
+        stack.pop();
+    }
 }
 
 void Driver::sweepAngle(uint steps, real stepsize)
@@ -276,7 +300,7 @@ void Driver::writeConvergenceData(std::string file)
     datafile.open(file, std::ofstream::out);
 
     for (uint i=0; i<convergenceData.size(); ++i) {
-        datafile << i << "\t" << convergenceData[i].real()
+        datafile << i+basis.size()-convergenceData.size() << "\t" << convergenceData[i].real()
                  << " "       << convergenceData[i].imag() <<  "\n";
     }
 

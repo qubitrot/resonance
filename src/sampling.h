@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <random>
+#include <list>
 #include "typedefs.h"
 #include "system.h"
 
@@ -88,14 +89,18 @@ class SampleSpace
     CGaussian genMatrix(int s = -1);
     uint chooseStrain();
 
+    void learnStrain(uint strain,real impact);
+
     void addStrain(MatrixStrain*,uint);
 
     private:
     std::vector<
-        std::pair<MatrixStrain*,uint>
+        std::pair<MatrixStrain*,real>
     > strains;
 
     uint totalFreq;
+
+    std::list< std::pair<uint,real> > learnFreqList;
 
     std::minstd_rand rand;
 };

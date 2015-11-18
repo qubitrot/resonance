@@ -1,10 +1,10 @@
 {
     "driver" : {
         "target"       : 0,
-        "threads"      : 4,
-        "basisMax"     : 4,
-        "trialSize"    : 50, //per thread
-        "overlapLimit" : 0.97
+        "threads"      : 8,
+        "basisMax"     : 100,
+        "trialSize"    : 100, //per thread
+        "singularityLimit" : 1e-14
     },
 
     "particles" : [
@@ -25,8 +25,8 @@
         {
             "pair" : ["boson1","boson1"],
             "type" : "gaussian",
-           // "V0"   : -98.86499748,
-            "V0"   : -14.911136947,
+            "V0"   : -98.86499748,
+           // "V0"   : -14.911136947,
             "r0"   : 0.3
         }
     ],

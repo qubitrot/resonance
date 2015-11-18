@@ -6,17 +6,39 @@
 
     "driver" : {
         "target"       : 0,
-        "threads"      : 1,
+        "threads"      : 6,
         "basisMax"     : 60,
-        "trialSize"    : 100, //per thread
-        "overlapLimit" : 0.97
+        "trialSize"    : 1, //per thread
+        "singularityLimit" : 1e-12,
+        "forceDiversity" : 0
     },
 
     "particles" : [
         {
             "name"  : "boson1",
             "type"  : "boson",
-            "count" : 4,
+            "count" : 1,
+            "mass"  : 1,
+            "identicality" : 1
+        },
+        {
+            "name"  : "boson2",
+            "type"  : "boson",
+            "count" : 1,
+            "mass"  : 1,
+            "identicality" : 1
+        },
+        {
+            "name"  : "boson3",
+            "type"  : "boson",
+            "count" : 1,
+            "mass"  : 1,
+            "identicality" : 1
+        },
+        {
+            "name"  : "boson4",
+            "type"  : "boson",
+            "count" : 1,
             "mass"  : 1,
             "identicality" : 1
         }
@@ -28,7 +50,37 @@
 
     "interactions" : [
         {
-            "pair" : ["boson1","boson1"],
+            "pair" : ["boson1","boson2"],
+            "type" : "gaussian",
+            "V0"   : -14.911136947,
+            "r0"   : 0.3
+        },
+        {
+            "pair" : ["boson1","boson3"],
+            "type" : "gaussian",
+            "V0"   : -14.911136947,
+            "r0"   : 0.3
+        },
+        {
+            "pair" : ["boson1","boson4"],
+            "type" : "gaussian",
+            "V0"   : -14.911136947,
+            "r0"   : 0.3
+        },
+        {
+            "pair" : ["boson2","boson3"],
+            "type" : "gaussian",
+            "V0"   : -14.911136947,
+            "r0"   : 0.3
+        },
+        {
+            "pair" : ["boson2","boson4"],
+            "type" : "gaussian",
+            "V0"   : -14.911136947,
+            "r0"   : 0.3
+        },
+        {
+            "pair" : ["boson3","boson4"],
             "type" : "gaussian",
             "V0"   : -14.911136947,
             "r0"   : 0.3
@@ -41,51 +93,168 @@
                 "name" : "order1",
                 "type" : "uniform",
                 "min"  : 0,
-                "max"  : 4
+                "max"  : 2 
             },
             {
                 "name" : "order10",
                 "type" : "uniform",
-                "min"  : 4,
+                "min"  : 0,
                 "max"  : 30
             },
             {
                 "name" : "order100",
                 "type" : "uniform",
-                "min"  : 30,
+                "min"  : 0,
                 "max"  : 100
             }
         ],
 
         "strains" : [
             {
-                "frequency" : 2, 
+                "frequency" : 10, 
                 "pairs" : [
                     {
-                        "pair" : [ "boson1","boson1" ],
+                        "pair" : [ "boson1","boson2" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson1","boson3" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson1","boson4" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson2","boson3" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson2","boson4" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson3","boson4" ],
                         "distribution" : "order1"
                     }
                 ]
             },
             {
-                "frequency" : 0, 
+                "frequency" : 10, 
                 "pairs" : [
                     {
-                        "pair" : [ "boson1","boson1" ],
+                        "pair" : [ "boson1","boson2" ],
+                        "distribution" : "order10"
+                    },
+                    {
+                        "pair" : [ "boson1","boson3" ],
+                        "distribution" : "order10"
+                    },
+                    {
+                        "pair" : [ "boson1","boson4" ],
+                        "distribution" : "order10"
+                    },
+                    {
+                        "pair" : [ "boson2","boson3" ],
+                        "distribution" : "order10"
+                    },
+                    {
+                        "pair" : [ "boson2","boson4" ],
+                        "distribution" : "order10"
+                    },
+                    {
+                        "pair" : [ "boson3","boson4" ],
                         "distribution" : "order10"
                     }
                 ]
             },
             {
-                "frequency" : 0, 
+                "frequency" : 10, 
                 "pairs" : [
                     {
-                        "pair" : [ "boson1","boson1" ],
+                        "pair" : [ "boson1","boson2" ],
+                        "distribution" : "order100"
+                    },
+                    {
+                        "pair" : [ "boson1","boson3" ],
+                        "distribution" : "order100"
+                    },
+                    {
+                        "pair" : [ "boson1","boson4" ],
+                        "distribution" : "order100"
+                    },
+                    {
+                        "pair" : [ "boson2","boson3" ],
+                        "distribution" : "order100"
+                    },
+                    {
+                        "pair" : [ "boson2","boson4" ],
+                        "distribution" : "order100"
+                    },
+                    {
+                        "pair" : [ "boson3","boson4" ],
+                        "distribution" : "order100"
+                    }
+                ]
+            },
+            {
+                "frequency" : 30, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson2" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson1","boson3" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson1","boson4" ],
+                        "distribution" : "order10"
+                    },
+                    {
+                        "pair" : [ "boson2","boson3" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson2","boson4" ],
+                        "distribution" : "order10"
+                    },
+                    {
+                        "pair" : [ "boson3","boson4" ],
+                        "distribution" : "order10"
+                    }
+                ]
+            },
+            {
+                "frequency" : 40, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson2" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson1","boson3" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson1","boson4" ],
+                        "distribution" : "order100"
+                    },
+                    {
+                        "pair" : [ "boson2","boson3" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson2","boson4" ],
+                        "distribution" : "order100"
+                    },
+                    {
+                        "pair" : [ "boson3","boson4" ],
                         "distribution" : "order100"
                     }
                 ]
             }
-
         ]
     }
 }

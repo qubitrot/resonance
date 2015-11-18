@@ -115,9 +115,9 @@ MatrixXr MatrixStrain::genWidths()
     widths.resize(N,N);
 
     for(uint k=0; k<N; ++k) {
-        for (uint l=0; l<=k; ++l) {
+        for (uint l=0; l<k; ++l) {
             std::string p1 = particles[k]->name;
-            std::string p2 = particles[k]->name;
+            std::string p2 = particles[l]->name;
             auto key = std::make_pair(p1,p2);
 
             if(distributions.find(key) == distributions.end()) {
@@ -154,10 +154,14 @@ CGaussian SampleSpace::genMatrix(int s)
 {
     if (s == -1) {
         uint n = chooseStrain();
-        return strains[n].first->genMatrix();
+        CGaussian m = strains[n].first->genMatrix();
+        m.strain = n;
+        return m;
     } else {
         assert( (uint)s < strains.size());
-        return strains[s].first->genMatrix();
+        CGaussian m = strains[s].first->genMatrix();
+        m.strain = s;
+        return m;
     }
 }
 
@@ -169,6 +173,40 @@ uint SampleSpace::chooseStrain()
     while (r > strains[n].second) r -= strains[n++].second;
 
     return n;
+}
+
+void SampleSpace::learnStrain(uint strain, real impact)
+{
+    /*if (learnFreqList.size() < 100) {
+        for (uint i=0; i<strains.size(); ++i) {
+            real percent = 100 * strains[i].second / totalFreq;
+            for (uint j=0; j<percent; ++j) {
+                learnFreqList.push_back( std::make_pair(i,1) );
+            }
+        }
+    }
+    while (learnFreqList.size() < 100) {
+        learnFreqList.push_back( std::make_pair(0,1) );
+    }*/
+
+    learnFreqList.push_back( std::make_pair(strain,impact) );
+    if (learnFreqList.size() > 100) {
+        learnFreqList.pop_front();
+    }
+
+    std::cout << learnFreqList.size() << "\n";
+
+    for (uint i=0; i<strains.size(); ++i) {
+        real count = 0;
+        for (auto s : learnFreqList) {
+            if (s.first == i) count++;
+        }
+
+        real percent = 100 * count / learnFreqList.size();
+        std::cout << i << " - " << count << "%\n";
+
+        //strains[i].second = percent;
+    }
 }
 
 void SampleSpace::addStrain(MatrixStrain* ms, uint freq)

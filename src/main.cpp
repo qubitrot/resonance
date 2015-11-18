@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
-#include <tclap/CmdLine.h>
+#include "tclap/CmdLine.h"
 #include "json/json.h"
 #include "typedefs.h"
 #include "system.h"
@@ -50,10 +50,10 @@ int main(int argc, char* argv[])
             struct tm* now = localtime(&t);
 
             std::string date;
-            date = std::to_string(now->tm_year+1900) + std::string("-")
-                 + std::to_string(now->tm_mon)       + std::string("-")
+            date = " "; /*std::to_string(now->tm_year+1900) + std::string("-")
+                 + std::to_string(now->tm_mon+1)     + std::string("-")
                  + std::to_string(now->tm_mday)      + std::string("-")
-                 + std::to_string(now->tm_hour);
+                 + std::to_string(now->tm_hour);*/
 
             int lastdot   = configFile.find_last_of(".");
             int lastslash = configFile.find_last_of("/");
@@ -74,15 +74,14 @@ int main(int argc, char* argv[])
         driver->readBasis(basisFile);
     }
 
-    for (int i=0; i<1000; ++i) {
-        driver->generateBasis(20);
+    for (int i=0; i<5000; ++i) {
+        driver->generateBasis(1);
         driver->writeBasis(outdir+"/basis.json");
         driver->writeConvergenceData(outdir+"/convergence.dat");
         //driver->targetState++;
     }
 
-    //driver->sweepAngle(200,pi/1000);
-
+    driver->sweepAngle(100,pi/500);
 
     delete driver;
     delete sampleSpace;
