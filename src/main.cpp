@@ -74,18 +74,24 @@ int main(int argc, char* argv[])
         driver->readBasis(basisFile);
     }
 
-    for (int i=0; i<5000; ++i) {
+    std::cout << "Let's go!\n";
+
+    for (int i=0; i<50; ++i) {
         driver->generateBasis(1);
         driver->writeBasis(outdir+"/basis.json");
         driver->writeConvergenceData(outdir+"/convergence.dat");
         //driver->targetState++;
     }
 
-    driver->sweepAngle(100,pi/500);
+    driver->sweepAngle(50,pi/500);
 
+    std::cout << "Deleting Driver.\n";
     delete driver;
+    std::cout << "Deleting Sample Space.\n";
     delete sampleSpace;
+    std::cout << "Deleting Solver.\n";
     delete solver;
+    std::cout << "Deleting Driver.\n";
     delete system;
 
     return 0;

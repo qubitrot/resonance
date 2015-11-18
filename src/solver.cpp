@@ -3,6 +3,17 @@
 #include "solver.h"
 #include "sampling.h"
 
+typedef struct {
+    double real;
+    double imag;
+} fortranComplex16;
+
+extern "C" void zggev_(const char* JOBVL, const char* JOBVR, const int* N,
+                       fortranComplex16* A, const int* LDA, fortranComplex16* B, const int* LDB,
+                       fortranComplex16* ALPHA, fortranComplex16* BETA,
+                       fortranComplex16* VL, const int* LDVL, fortranComplex16* VR, const int* LDVR,
+                       fortranComplex16* WORK, const int* LWORK, double* RWORK, int* INFO);
+
 Solver::Solver(System* sys)
     : system(sys)
 {}
@@ -71,7 +82,7 @@ SolverResults CpuSolver::solve(const Basis& basis, real theta)
     }
 
     if (theta == 0) return computeHermition(H,O);
-    else            return compute(H,O);
+    else            return computeQZ(H,O);
 }
 
 SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults& cache, uint row)
@@ -140,7 +151,7 @@ SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults&
     }
 
     if (theta == 0) return computeHermition(H,O);
-    else            return compute(H,O);
+    else            return computeQZ(H,O);
 }
 
 SolverResults CpuSolver::compute(MatrixXc& H, MatrixXr& O)
@@ -195,16 +206,72 @@ SolverResults CpuSolver::computeHermition(MatrixXc& H, MatrixXr& O)
     return out;
 }
 
-/*SolverResults CpuSolver::MAGMAcomputeHermition(MatrixXc& H, MatrixXc& O)
+SolverResults CpuSolver::computeQZ(MatrixXc& H, MatrixXr& O)
 {
-    double* w;
-    double* A;
-    double* B;
-    double* work;
+    std::clock_t start = std::clock();
 
-    magma_int_t n    = H.rows();
-    magma_int_t code = magma_dsygvd(1,MagmaNoVec,MagmaUpper,n,A,n,B,n,work,);
-}*/
+    int n     = H.rows();
+    int ldvl  = n;
+    int ldvr  = n;
+    int lwork = 2*n;
+    int info;
+
+    fortranComplex16* A     = new fortranComplex16[n*n];
+    fortranComplex16* B     = new fortranComplex16[n*n];
+    fortranComplex16* alpha = new fortranComplex16[n];
+    fortranComplex16* beta  = new fortranComplex16[n];
+    fortranComplex16* work  = new fortranComplex16[std::max(1,lwork)];
+    double*           rwork = new double[8*n];
+
+    for (int i=0; i<n; ++i) {
+        for (int j=0; j<n; ++j) {
+            A[n*i+j].real = H.data()[n*i+j].real();
+            A[n*i+j].imag = H.data()[n*i+j].imag();
+            B[n*i+j].real = O.data()[n*i+j];
+            B[n*i+j].imag = 0;
+        }
+    }
+
+    std::clock_t pre = std::clock();
+
+    zggev_("N","N",&n,A,&n,B,&n,alpha,beta,nullptr,&ldvl,nullptr,&ldvr,work,&lwork,rwork,&info);
+
+    std::clock_t post = std::clock();
+
+    std::vector<complex> eigenvalues;
+    for (int i=0; i<n; ++i) {
+        eigenvalues.push_back(complex(alpha[i].real,alpha[i].imag)
+                             /complex(beta[i].real,beta[i].imag));
+    }
+
+    struct {
+        bool operator()(complex a, complex b) {
+            return a.real() < b.real();
+        }
+    } customLess;
+    std::sort(eigenvalues.begin(),eigenvalues.end(),customLess);
+
+    delete[] rwork;
+    delete[] work;
+    delete[] beta;
+    delete[] alpha;
+    delete[] B;
+    delete[] A;
+
+    SolverResults out;
+    out.H = H;
+    out.O = O;
+    out.eigenvalues = eigenvalues;
+
+    std::clock_t end = std::clock();
+
+    std::cout << (pre-start)/(double)CLOCKS_PER_SEC << "\t"
+              << (post-pre)/(double)CLOCKS_PER_SEC << "\t"
+              << (end-post)/(double)CLOCKS_PER_SEC << "\t"
+              << (end-start)/(double)CLOCKS_PER_SEC << "\n";
+
+    return out;
+}
 
 real CpuSolver::overlap(const CGaussian& A, const CGaussian& B)
 {

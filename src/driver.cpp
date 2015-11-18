@@ -95,8 +95,7 @@ Basis Driver::generateBasis(uint size)
             std::cout << "strain: " << best.strain << "  ";
 
             if (basis.size() > targetState + 1) {
-                std::cout << "E = " << std::setprecision(18) << bev << "\t";
-                std::cout << "E = " << std::setprecision(18) << basisCache.eigenvalues[targetState+1] << "\n";
+                std::cout << "E = " << std::setprecision(18) << bev;
             } else {
                 std::cout << "\n";
             }
@@ -169,24 +168,33 @@ void Driver::sweepAngle(uint steps, real stepsize)
     std::vector<SolverResults> vsr;
     vsr.resize(steps);
 
-    for (uint i=0; i<steps; ++i) {
-        std::vector<std::thread> threads;
-
-        for(uint n=0; n<numThreads; ++n) {
+    if (numThreads == 1) {
+        for (uint i=0; i<steps; ++i) {
             real theta = stepsize*i;
-
-            if (i >= steps) break;
-
             std::cout << i << " Solve angle " << theta << "\n";
-            threads.push_back(threadify_member(&Solver::solve,solver,&vsr[i],basis,theta));
 
-            i++;
+            vsr[i] = solver->solve(basis,theta);
         }
-        i--;
+    } else {
+        for (uint i=0; i<steps; ++i) {
+            std::vector<std::thread> threads;
 
-        auto it = threads.begin();
-        for (; it != threads.end(); ++it) {
-            it->join();
+            for(uint n=0; n<numThreads; ++n) {
+                real theta = stepsize*i;
+
+                if (i >= steps) break;
+
+                std::cout << i << " Solve angle " << theta << "\n";
+                threads.push_back(threadify_member(&Solver::solve,solver,&vsr[i],basis,theta));
+
+                i++;
+            }
+            i--;
+
+            auto it = threads.begin();
+            for (; it != threads.end(); ++it) {
+                it->join();
+            }
         }
     }
 
