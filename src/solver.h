@@ -57,7 +57,7 @@ private:
 
     real genc_ij(const CGaussian& A, const CGaussian& B, uint i, uint j);
 
-    SolverResults computeHermition(MatrixXc& H, MatrixXr& O);
+    SolverResults computeHermition(MatrixXc& T, MatrixXc& V, MatrixXr& O);
     SolverResults computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O);
 
     std::tuple<Basis,std::vector<int>,uint> symmetrize(const CGaussian&);

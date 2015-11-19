@@ -76,14 +76,14 @@ int main(int argc, char* argv[])
 
     std::cout << "Let's go!\n";
 
-    for (int i=0; i<50; ++i) {
+    for (int i=0; i<100; ++i) {
         driver->generateBasis(1);
         driver->writeBasis(outdir+"/basis.json");
         driver->writeConvergenceData(outdir+"/convergence.dat");
         //driver->targetState++;
     }
 
-    //driver->sweepAngle(50,pi/500);
+    driver->sweepAngle(50,pi/500);
 
     std::cout << "Deleting Driver.\n";
     delete driver;

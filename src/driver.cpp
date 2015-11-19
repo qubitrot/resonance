@@ -168,12 +168,16 @@ void Driver::sweepAngle(uint steps, real stepsize)
     std::vector<SolverResults> vsr;
     vsr.resize(steps);
 
+    if (basisCache.eigenvalues.size() != basis.size()) {
+        basisCache = solver->solve(basis);
+    }
+
     if (numThreads == 1) {
         for (uint i=0; i<steps; ++i) {
             real theta = stepsize*i;
             std::cout << i << " Solve angle " << theta << "\n";
 
-            vsr[i] = solver->solve(basis);
+            vsr[i] = solver->solveRotation(basis,theta,basisCache);
         }
     } else {
         for (uint i=0; i<steps; ++i) {
@@ -185,8 +189,8 @@ void Driver::sweepAngle(uint steps, real stepsize)
                 if (i >= steps) break;
 
                 std::cout << i << " Solve angle " << theta << "\n";
-                threads.push_back(threadify_member(&Solver::solve,solver,&vsr[i],basis));
-
+                threads.push_back(threadify_member(
+                                  &Solver::solveRotation,solver,&vsr[i],basis,theta,basisCache));
                 i++;
             }
             i--;

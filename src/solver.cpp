@@ -35,12 +35,14 @@ SolverResults CpuSolver::solve(const Basis& basis)
     uint size = basis.size();
     uint N    = particles.size();
 
-    MatrixXc H;     H.resize(size,size);
+    MatrixXc T;     T.resize(size,size);
+    MatrixXc V;     V.resize(size,size);
     MatrixXr O;     O.resize(size,size);
 
     for (uint m=0; m<size; ++m) {
         for (uint n=0; n<=m; ++n) {
-            H(m,n) = 0;
+            T(m,n) = 0;
+            V(m,n) = 0;
             O(m,n) = 0;
 
             auto              symFunc = symmetrize(basis[m]);
@@ -52,7 +54,7 @@ SolverResults CpuSolver::solve(const Basis& basis)
                 real ol = overlap(A_sym[k],basis[n]);
 
                 O(m,n) += signs[k]*nperm * ol;
-                H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
+                V(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
 
                 for (uint i=0; i<N; ++ i) {
                     for (uint j=0; j<i; ++j) {
@@ -61,11 +63,11 @@ SolverResults CpuSolver::solve(const Basis& basis)
 
                         real c_ij = genc_ij(A_sym[k],basis[n],i,j);
 
-                        const InteractionV& V = system->getInteraction(p1,p2);
-                        switch (V.type) {
+                        const InteractionV& inter = system->getInteraction(p1,p2);
+                        switch (inter.type) {
                             case InteractionV::Gaussian:
-                                H(m,n) += complex(signs[k]*nperm)
-                                        * gaussianV(V.v0,V.r0,0,ol,c_ij);
+                                V(m,n) += complex(signs[k]*nperm)
+                                        * gaussianV(inter.v0,inter.r0,0,ol,c_ij);
                                 break;
 
                             case InteractionV::Harmonic:
@@ -77,11 +79,12 @@ SolverResults CpuSolver::solve(const Basis& basis)
                 }
             }
             O(n,m) = O(m,n);
-            H(n,m) = H(m,n);
+            T(n,m) = T(m,n);
+            V(n,m) = V(m,n);
         }
     }
 
-    return computeHermition(H,O);
+    return computeHermition(T,V,O);
 }
 
 SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint row)
@@ -101,14 +104,17 @@ SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint
     }
 #endif
 
-    MatrixXc H = cache.H;
+    MatrixXc T = cache.T;
+    MatrixXc V = cache.V;
     MatrixXr O = cache.O;
-    H.conservativeResize(size,size);
+    T.conservativeResize(size,size);
+    V.conservativeResize(size,size);
     O.conservativeResize(size,size);
 
     uint n = row;
     for (uint m=0; m<size; ++m) {
-        H(m,n) = 0;
+        T(m,n) = 0;
+        V(m,n) = 0;
         O(m,n) = 0;
 
         auto              symFunc = symmetrize(basis[m]);
@@ -120,7 +126,7 @@ SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint
             real ol = overlap(A_sym[k],basis[n]);
 
             O(m,n) += signs[k]*nperm * ol;
-            H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
+            T(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
 
             for (uint i=0; i<N; ++ i) {
                 for (uint j=0; j<i; ++j) {
@@ -129,11 +135,11 @@ SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint
 
                     real c_ij = genc_ij(A_sym[k],basis[n],i,j);
 
-                    const InteractionV& V = system->getInteraction(p1,p2);
-                    switch (V.type) {
+                    const InteractionV& inter = system->getInteraction(p1,p2);
+                    switch (inter.type) {
                         case InteractionV::Gaussian:
-                            H(m,n) += complex(signs[k]*nperm)
-                                    * gaussianV(V.v0,V.r0,0,ol,c_ij);
+                            V(m,n) += complex(signs[k]*nperm)
+                                    * gaussianV(inter.v0,inter.r0,0,ol,c_ij);
                             break;
 
                         case InteractionV::Harmonic:
@@ -146,10 +152,11 @@ SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint
         }
 
         O(n,m) = O(m,n);
-        H(n,m) = H(m,n);
+        T(n,m) = T(m,n);
+        V(n,m) = V(m,n);
     }
 
-    return computeHermition(H,O);
+    return computeHermition(T,V,O);
 }
 
 SolverResults CpuSolver::solveRotation(const Basis& basis, real theta, SolverResults& unrot)
@@ -205,8 +212,10 @@ SolverResults CpuSolver::solveRotation(const Basis& basis, real theta, SolverRes
     return computeQZ(T,V,O);
 }
 
-SolverResults CpuSolver::computeHermition(MatrixXc& H, MatrixXr& O)
+SolverResults CpuSolver::computeHermition(MatrixXc& T, MatrixXc& V, MatrixXr& O)
 {
+    MatrixXc H = T+V;
+
     Eigen::GeneralizedSelfAdjointEigenSolver<MatrixXc> eigenSolver;
     eigenSolver.compute(H,O.cast<complex>());
 
@@ -215,6 +224,8 @@ SolverResults CpuSolver::computeHermition(MatrixXc& H, MatrixXr& O)
     SolverResults out;
     out.H = H;
     out.O = O;
+    out.T = T;
+    out.V = V;
 
     out.eigenvalues.resize(eigenvals.rows());
     for (int k=0; k<eigenvals.rows(); ++k) {
@@ -233,8 +244,6 @@ SolverResults CpuSolver::computeHermition(MatrixXc& H, MatrixXr& O)
 
 SolverResults CpuSolver::computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O)
 {
-    std::clock_t start = std::clock();
-
     MatrixXc H = T+V;
 
     int n     = H.rows();
@@ -259,11 +268,7 @@ SolverResults CpuSolver::computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O)
         }
     }
 
-    std::clock_t pre = std::clock();
-
     zggev_("N","N",&n,A,&n,B,&n,alpha,beta,nullptr,&ldvl,nullptr,&ldvr,work,&lwork,rwork,&info);
-
-    std::clock_t post = std::clock();
 
     std::vector<complex> eigenvalues;
     for (int i=0; i<n; ++i) {
@@ -291,13 +296,6 @@ SolverResults CpuSolver::computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O)
     out.T = T;
     out.V = V;
     out.eigenvalues = eigenvalues;
-
-    std::clock_t end = std::clock();
-
-    std::cout << (pre-start)/(double)CLOCKS_PER_SEC << "\t"
-              << (post-pre)/(double)CLOCKS_PER_SEC << "\t"
-              << (end-post)/(double)CLOCKS_PER_SEC << "\t"
-              << (end-start)/(double)CLOCKS_PER_SEC << "\n";
 
     return out;
 }
