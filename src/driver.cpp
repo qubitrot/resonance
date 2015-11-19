@@ -309,7 +309,7 @@ void Driver::writeConvergenceData(std::string file)
 
     for (uint i=0; i<convergenceData.size(); ++i) {
         datafile << i+basis.size()-convergenceData.size() << "\t" << convergenceData[i].real()
-                 << " "       << convergenceData[i].imag() <<  "\n";
+                 << " " << convergenceData[i].imag() <<  "\n";
     }
 
     datafile.flush();

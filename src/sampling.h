@@ -65,12 +65,13 @@ public:
     //Generates a new CGaussian according to distributions.
     CGaussian genMatrix();
 
-    void setDistribution(std::string& p1, std::string& p2, SamplingDistribution* sd);
+    void setDistribution(std::string& p1, std::string& p2,
+                         const std::shared_ptr<SamplingDistribution>& sd);
 
 private:
     std::unordered_map<
         std::pair<std::string,std::string>,
-        SamplingDistribution*
+        std::shared_ptr<SamplingDistribution>
     > distributions;
 
     System* system;

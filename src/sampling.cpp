@@ -59,16 +59,10 @@ MatrixStrain::MatrixStrain(System* sys)
 {}
 
 MatrixStrain::~MatrixStrain()
-{
-    for (auto a : distributions) {
-        if (a.second != nullptr) {
-            delete a.second;
-            a.second = nullptr;
-        }
-    }
-}
+{}
 
-void MatrixStrain::setDistribution(std::string& p1, std::string& p2, SamplingDistribution* sd)
+void MatrixStrain::setDistribution(std::string& p1, std::string& p2,
+                                   const std::shared_ptr<SamplingDistribution>& sd)
 {
     auto key = std::make_pair(p1,p2);
     distributions[key] = sd;

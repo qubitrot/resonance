@@ -167,14 +167,15 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
     const Json::Value dists   = ss["distributions"];
     const Json::Value strains = ss["strains"];
 
-    std::unordered_map<std::string,SamplingDistribution*> distributions;
+    std::unordered_map<std::string,std::shared_ptr<SamplingDistribution> > distributions;
     for (uint k=0; k<dists.size(); ++k) {
         if (dists[k].get("type","").asString() == "uniform") {
             std::string name = dists[k].get("name","").asString();
             double min = dists[k].get("min",0).asDouble();
             double max = dists[k].get("max",0).asDouble();
 
-            distributions[name] = new SD_Uniform(min,max,k);
+            distributions[name] = std::shared_ptr<SamplingDistribution>(new SD_Uniform(min,max,k));
+
         } else if (dists[k].get("type","").asString() == "gaussian") {
             std::string name = dists[k].get("name","").asString();
             double min = dists[k].get("min",0).asDouble();
@@ -182,7 +183,7 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
             double avg = dists[k].get("mean",0).asDouble();
             double std = dists[k].get("std",1).asDouble();
 
-            distributions[name] = new SD_Gaussian(avg,std,min,max);
+            distributions[name] = std::shared_ptr<SamplingDistribution>(new SD_Gaussian(avg,std,min,max));
         }
     }
 
@@ -197,7 +198,7 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
             std::string p2 = pairs[l]["pair"][1].asString();
             std::string d  = pairs[l].get("distribution","").asString();
 
-            SamplingDistribution* dp;
+            std::shared_ptr<SamplingDistribution> dp;
             if (distributions.find(d) != distributions.end()) {
                 dp = distributions[d];
             } else {
