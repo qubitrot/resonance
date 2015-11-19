@@ -207,32 +207,6 @@ SolverResults CpuSolver::solveRotation(const Basis& basis, real theta, SolverRes
     return computeQZ(T,V,O);
 }
 
-SolverResults CpuSolver::compute(MatrixXc& H, MatrixXr& O)
-{
-    Eigen::ComplexEigenSolver<MatrixXc> eigenSolver;
-    eigenSolver.compute(H*O.inverse().cast<complex>());
-
-    VectorXc eigenvals = eigenSolver.eigenvalues().cast<complex>();
-
-    SolverResults out;
-    out.H = H;
-    out.O = O;
-
-    out.eigenvalues.resize(eigenvals.rows());
-    for (int k=0; k<eigenvals.rows(); ++k) {
-        out.eigenvalues[k] = eigenvals(k);
-    }
-
-    struct {
-        bool operator()(complex a, complex b) {
-            return a.real() < b.real();
-        }
-    } customLess;
-    std::sort(out.eigenvalues.begin(),out.eigenvalues.end(),customLess);
-
-    return out;
-}
-
 SolverResults CpuSolver::computeHermition(MatrixXc& H, MatrixXr& O)
 {
     Eigen::GeneralizedSelfAdjointEigenSolver<MatrixXc> eigenSolver;
