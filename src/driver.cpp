@@ -50,7 +50,7 @@ Basis Driver::generateBasis(uint size)
         if (basisCache.eigenvalues.size() > targetState &&
             basisCache.eigenvalues[targetState].real() < targetenergy &&
             basisCache.eigenvalues[targetState+1].real() != 0) {
-            targetState++;
+            //targetState++;
         }
 
         std::cout << "target: " << targetState << "  ";
@@ -61,7 +61,7 @@ Basis Driver::generateBasis(uint size)
             *caches[i] = basisCache;
             threads.push_back(
                     std::thread(Driver::findBestAddition,candidates[i],this,generateTrials(trialSize),
-                                caches[i],targetState,0,singularityLimit)
+                                caches[i],targetState,singularityLimit)
             );
         }
 
@@ -111,7 +111,7 @@ Basis Driver::generateBasis(uint size)
 }
 
 void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver, Basis trials,
-                              SolverResults* bcache, uint target, real theta, real singularityLimit)
+                              SolverResults* bcache, uint target, real singularityLimit)
 {
     CGaussian best;
     complex lowestEV = complex(0,0);

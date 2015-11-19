@@ -52,7 +52,7 @@ SolverResults CpuSolver::solve(const Basis& basis)
                 real ol = overlap(A_sym[k],basis[n]);
 
                 O(m,n) += signs[k]*nperm * ol;
-                H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],0,ol);
+                H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
 
                 for (uint i=0; i<N; ++ i) {
                     for (uint j=0; j<i; ++j) {
@@ -120,7 +120,7 @@ SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint
             real ol = overlap(A_sym[k],basis[n]);
 
             O(m,n) += signs[k]*nperm * ol;
-            H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],0,ol);
+            H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
 
             for (uint i=0; i<N; ++ i) {
                 for (uint j=0; j<i; ++j) {
@@ -311,7 +311,7 @@ real CpuSolver::overlap(const CGaussian& A, const CGaussian& B)
     return A.norm*B.norm * q * std::sqrt(q);
 }
 
-complex CpuSolver::kinetic(const CGaussian& A, const CGaussian& B, real theta, real over)
+complex CpuSolver::kinetic(const CGaussian& A, const CGaussian& B, real over)
 {
     register constexpr real k = 3./2. * hbar;
 
@@ -319,9 +319,7 @@ complex CpuSolver::kinetic(const CGaussian& A, const CGaussian& B, real theta, r
                * (A.A+B.A).inverse()
                * B.A.selfadjointView<Eigen::Lower>() * system->lambdaM();
 
-    complex  v = complex(k*C.trace()*over,0);
-
-    return std::exp(complex(0,-2)*theta)*v;
+    return complex(k*C.trace()*over,0);
 }
 
 complex CpuSolver::gaussianV(real v0, real r0, real theta, real over, real c_ij)

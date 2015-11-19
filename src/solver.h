@@ -52,7 +52,7 @@ public:
     real overlap(const CGaussian&, const CGaussian&);
 
 private:
-    complex kinetic  (const CGaussian&, const CGaussian&, real,real);
+    complex kinetic  (const CGaussian&, const CGaussian&, real);
     complex gaussianV(real v0, real r0, real theta, real over, real c_ij);
 
     real genc_ij(const CGaussian& A, const CGaussian& B, uint i, uint j);

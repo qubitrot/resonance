@@ -39,7 +39,7 @@ private:
     std::vector<complex> convergenceData;
 
     static void findBestAddition(std::pair<CGaussian,complex>* out,Driver*,Basis trails,
-                                 SolverResults* bcache,uint target,real theta,real singularityLimit);
+                                 SolverResults* bcache,uint target,real singularityLimit);
 };
 
 #endif
