@@ -82,7 +82,7 @@ SolverResults CpuSolver::solve(const Basis& basis, real theta)
     }
 
     if (theta == 0) return computeHermition(H,O);
-    else            return computeQZ(H,O);
+    //else            return computeQZ(H,O);
 }
 
 SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults& cache, uint row)
@@ -151,7 +151,60 @@ SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults&
     }
 
     if (theta == 0) return computeHermition(H,O);
-    else            return computeQZ(H,O);
+    //else            return computeQZ(H,O);
+}
+
+SolverResults CpuSolver::solveRotation(const Basis& basis, real theta, SolverResults& unrot)
+{
+    const std::vector<Particle*>& particles = system->getParticles();
+
+    uint size = basis.size();
+    uint N    = particles.size();
+
+    MatrixXr O = unrot.O;
+    MatrixXc T = std::exp(complex(0,-2)*theta) * unrot.T;
+    MatrixXc V;
+    V.resize(size,size);
+
+    for (uint m=0; m<size; ++m) {
+        for (uint n=0; n<=m; ++n) {
+            V(m,n) = 0;
+
+            auto              symFunc = symmetrize(basis[m]);
+            Basis&            A_sym   = std::get<0>(symFunc);
+            std::vector<int>& signs   = std::get<1>(symFunc);
+            uint              nperm   = std::get<2>(symFunc);
+
+            for (uint k=0; k<A_sym.size(); ++k) {
+                real ol = overlap(A_sym[k],basis[n]);
+
+                for (uint i=0; i<N; ++ i) {
+                    for (uint j=0; j<i; ++j) {
+                        std::string& p1 = particles[i]->name;
+                        std::string& p2 = particles[j]->name;
+
+                        real c_ij = genc_ij(A_sym[k],basis[n],i,j);
+
+                        const InteractionV& inter = system->getInteraction(p1,p2);
+                        switch (inter.type) {
+                            case InteractionV::Gaussian:
+                                V(m,n) += complex(signs[k]*nperm)
+                                        * gaussianV(inter.v0,inter.r0,theta,ol,c_ij);
+                                break;
+
+                            case InteractionV::Harmonic:
+                                break;
+                            case InteractionV::None:
+                                break;
+                        }
+                    }
+                }
+            }
+            V(n,m) = V(m,n);
+        }
+    }
+
+    return computeQZ(T,V,O);
 }
 
 SolverResults CpuSolver::compute(MatrixXc& H, MatrixXr& O)
@@ -206,9 +259,11 @@ SolverResults CpuSolver::computeHermition(MatrixXc& H, MatrixXr& O)
     return out;
 }
 
-SolverResults CpuSolver::computeQZ(MatrixXc& H, MatrixXr& O)
+SolverResults CpuSolver::computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O)
 {
     std::clock_t start = std::clock();
+
+    MatrixXc H = T+V;
 
     int n     = H.rows();
     int ldvl  = n;
@@ -261,6 +316,8 @@ SolverResults CpuSolver::computeQZ(MatrixXc& H, MatrixXr& O)
     SolverResults out;
     out.H = H;
     out.O = O;
+    out.T = T;
+    out.V = V;
     out.eigenvalues = eigenvalues;
 
     std::clock_t end = std::clock();

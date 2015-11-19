@@ -9,6 +9,8 @@
 struct SolverResults
 {
     MatrixXc H;
+    MatrixXc T;
+    MatrixXc V;
     MatrixXr O;
     std::vector<complex>  eigenvalues;
     std::vector<VectorXc> eigenvectors;
@@ -25,6 +27,8 @@ public:
 
     //Compute Hamiltonian elements only for one row/col
     virtual SolverResults solveRow(const Basis&, real theta, SolverResults& cache, uint row)=0;
+
+    virtual SolverResults solveRotation(const Basis&, real theta, SolverResults& unrot)=0;
 
     virtual real overlap(const CGaussian&, const CGaussian&)=0;
 
@@ -43,6 +47,7 @@ public:
 
     SolverResults solve(const Basis&, real theta);
     SolverResults solveRow(const Basis&, real theta, SolverResults& cache, uint row);
+    SolverResults solveRotation(const Basis&, real theta, SolverResults& unrot);
 
     real overlap(const CGaussian&, const CGaussian&);
 
@@ -54,7 +59,7 @@ private:
 
     SolverResults compute(MatrixXc& H, MatrixXr& O);
     SolverResults computeHermition(MatrixXc& H, MatrixXr& O);
-    SolverResults computeQZ(MatrixXc& H, MatrixXr& O);
+    SolverResults computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O);
 
     std::tuple<Basis,std::vector<int>,uint> symmetrize(const CGaussian&);
 };
