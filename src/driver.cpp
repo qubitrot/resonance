@@ -36,7 +36,7 @@ Basis Driver::generateTrials(uint n)
 Basis Driver::generateBasis(uint size)
 {
     if (basisCache.eigenvalues.size() != basis.size()) {
-        basisCache = solver->solve(basis,0);
+        basisCache = solver->solve(basis);
     }
 
     for (uint s=0; s<size; ++s) {
@@ -129,7 +129,7 @@ void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver,
         Basis test = driver->basis;
         test.push_back(cg);
 
-        cache = driver->solver->solveRow(test,theta,cache,test.size()-1);
+        cache = driver->solver->solveRow(test,cache,test.size()-1);
 
         std::vector<complex> ev = cache.eigenvalues;
         if (lowestEV == complex(0,0) || ev[target].real() < lowestEV.real()) {
@@ -173,7 +173,7 @@ void Driver::sweepAngle(uint steps, real stepsize)
             real theta = stepsize*i;
             std::cout << i << " Solve angle " << theta << "\n";
 
-            vsr[i] = solver->solve(basis,theta);
+            vsr[i] = solver->solve(basis);
         }
     } else {
         for (uint i=0; i<steps; ++i) {
@@ -185,7 +185,7 @@ void Driver::sweepAngle(uint steps, real stepsize)
                 if (i >= steps) break;
 
                 std::cout << i << " Solve angle " << theta << "\n";
-                threads.push_back(threadify_member(&Solver::solve,solver,&vsr[i],basis,theta));
+                threads.push_back(threadify_member(&Solver::solve,solver,&vsr[i],basis));
 
                 i++;
             }

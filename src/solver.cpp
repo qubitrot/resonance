@@ -28,7 +28,7 @@ CpuSolver::CpuSolver(System* sys)
 CpuSolver::~CpuSolver()
 {}
 
-SolverResults CpuSolver::solve(const Basis& basis, real theta)
+SolverResults CpuSolver::solve(const Basis& basis)
 {
     const std::vector<Particle*>& particles = system->getParticles();
 
@@ -52,7 +52,7 @@ SolverResults CpuSolver::solve(const Basis& basis, real theta)
                 real ol = overlap(A_sym[k],basis[n]);
 
                 O(m,n) += signs[k]*nperm * ol;
-                H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],theta,ol);
+                H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],0,ol);
 
                 for (uint i=0; i<N; ++ i) {
                     for (uint j=0; j<i; ++j) {
@@ -65,7 +65,7 @@ SolverResults CpuSolver::solve(const Basis& basis, real theta)
                         switch (V.type) {
                             case InteractionV::Gaussian:
                                 H(m,n) += complex(signs[k]*nperm)
-                                        * gaussianV(V.v0,V.r0,theta,ol,c_ij);
+                                        * gaussianV(V.v0,V.r0,0,ol,c_ij);
                                 break;
 
                             case InteractionV::Harmonic:
@@ -81,11 +81,10 @@ SolverResults CpuSolver::solve(const Basis& basis, real theta)
         }
     }
 
-    if (theta == 0) return computeHermition(H,O);
-    //else            return computeQZ(H,O);
+    return computeHermition(H,O);
 }
 
-SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults& cache, uint row)
+SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint row)
 {
     const std::vector<Particle*>& particles = system->getParticles();
 
@@ -121,7 +120,7 @@ SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults&
             real ol = overlap(A_sym[k],basis[n]);
 
             O(m,n) += signs[k]*nperm * ol;
-            H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],theta,ol);
+            H(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],0,ol);
 
             for (uint i=0; i<N; ++ i) {
                 for (uint j=0; j<i; ++j) {
@@ -134,7 +133,7 @@ SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults&
                     switch (V.type) {
                         case InteractionV::Gaussian:
                             H(m,n) += complex(signs[k]*nperm)
-                                    * gaussianV(V.v0,V.r0,theta,ol,c_ij);
+                                    * gaussianV(V.v0,V.r0,0,ol,c_ij);
                             break;
 
                         case InteractionV::Harmonic:
@@ -150,8 +149,7 @@ SolverResults CpuSolver::solveRow(const Basis& basis, real theta, SolverResults&
         H(n,m) = H(m,n);
     }
 
-    if (theta == 0) return computeHermition(H,O);
-    //else            return computeQZ(H,O);
+    return computeHermition(H,O);
 }
 
 SolverResults CpuSolver::solveRotation(const Basis& basis, real theta, SolverResults& unrot)

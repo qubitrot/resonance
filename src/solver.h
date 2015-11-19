@@ -23,10 +23,10 @@ public:
     virtual ~Solver();
 
     //Compute and solve for ALL the Hamiltonian elements.
-    virtual SolverResults solve(const Basis&, real theta)=0;
+    virtual SolverResults solve(const Basis&)=0;
 
     //Compute Hamiltonian elements only for one row/col
-    virtual SolverResults solveRow(const Basis&, real theta, SolverResults& cache, uint row)=0;
+    virtual SolverResults solveRow(const Basis&, SolverResults& cache, uint row)=0;
 
     virtual SolverResults solveRotation(const Basis&, real theta, SolverResults& unrot)=0;
 
@@ -45,8 +45,8 @@ public:
     CpuSolver(System*);
     ~CpuSolver();
 
-    SolverResults solve(const Basis&, real theta);
-    SolverResults solveRow(const Basis&, real theta, SolverResults& cache, uint row);
+    SolverResults solve(const Basis&);
+    SolverResults solveRow(const Basis&, SolverResults& cache, uint row);
     SolverResults solveRotation(const Basis&, real theta, SolverResults& unrot);
 
     real overlap(const CGaussian&, const CGaussian&);
@@ -57,7 +57,6 @@ private:
 
     real genc_ij(const CGaussian& A, const CGaussian& B, uint i, uint j);
 
-    SolverResults compute(MatrixXc& H, MatrixXr& O);
     SolverResults computeHermition(MatrixXc& H, MatrixXr& O);
     SolverResults computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O);
 

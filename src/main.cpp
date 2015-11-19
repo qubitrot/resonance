@@ -50,10 +50,10 @@ int main(int argc, char* argv[])
             struct tm* now = localtime(&t);
 
             std::string date;
-            date = " "; /*std::to_string(now->tm_year+1900) + std::string("-")
+            date = std::to_string(now->tm_year+1900) + std::string("-")
                  + std::to_string(now->tm_mon+1)     + std::string("-")
                  + std::to_string(now->tm_mday)      + std::string("-")
-                 + std::to_string(now->tm_hour);*/
+                 + std::to_string(now->tm_hour);
 
             int lastdot   = configFile.find_last_of(".");
             int lastslash = configFile.find_last_of("/");
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
         //driver->targetState++;
     }
 
-    driver->sweepAngle(50,pi/500);
+    //driver->sweepAngle(50,pi/500);
 
     std::cout << "Deleting Driver.\n";
     delete driver;
