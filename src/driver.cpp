@@ -130,6 +130,7 @@ void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver,
         test.push_back(cg);
 
         cache = driver->solver->solveRow(test,cache,test.size()-1);
+        //cache = driver->solver->solve(test);
 
         std::vector<complex> ev = cache.eigenvalues;
         if (lowestEV == complex(0,0) || ev[target].real() < lowestEV.real()) {
@@ -163,10 +164,14 @@ void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver,
     }
 }
 
-void Driver::sweepAngle(uint steps, real stepsize)
+void Driver::sweepAngle(real start, real end, uint steps)
 {
+    assert (basis.size() > 0);
+
     std::vector<SolverResults> vsr;
     vsr.resize(steps);
+
+    real stepsize = (end-start)/(real)steps;
 
     if (basisCache.eigenvalues.size() != basis.size()) {
         basisCache = solver->solve(basis);
@@ -174,17 +179,19 @@ void Driver::sweepAngle(uint steps, real stepsize)
 
     if (numThreads == 1) {
         for (uint i=0; i<steps; ++i) {
-            real theta = stepsize*i;
+            real theta = start + stepsize*i;
             std::cout << i << " Solve angle " << theta << "\n";
 
             vsr[i] = solver->solveRotation(basis,theta,basisCache);
+
+            std::cout << vsr[i].eigenvalues[0] << "\n";
         }
     } else {
         for (uint i=0; i<steps; ++i) {
             std::vector<std::thread> threads;
 
             for(uint n=0; n<numThreads; ++n) {
-                real theta = stepsize*i;
+                real theta = start + stepsize*i;
 
                 if (i >= steps) break;
 
@@ -205,7 +212,7 @@ void Driver::sweepAngle(uint steps, real stepsize)
     std::ofstream sweepFile("sweep.dat");
 
     for (uint i=0; i<steps; ++i) {
-        sweepFile << stepsize*i;
+        sweepFile << start + stepsize*i;
         for (auto a : vsr[i].eigenvalues)
             sweepFile << "\t" << a.real() << " " << a.imag();
         sweepFile << "\n";

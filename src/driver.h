@@ -16,7 +16,7 @@ public:
     Basis generateTrials(uint size);
     Basis generateBasis(uint size);
 
-    void sweepAngle(uint steps, real stepsize);
+    void sweepAngle(real start, real end, uint steps);
 
     void readBasis(std::string file);
     void writeBasis(std::string file);

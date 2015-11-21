@@ -54,7 +54,7 @@ SolverResults CpuSolver::solve(const Basis& basis)
                 real ol = overlap(A_sym[k],basis[n]);
 
                 O(m,n) += signs[k]*nperm * ol;
-                V(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
+                T(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
 
                 for (uint i=0; i<N; ++ i) {
                     for (uint j=0; j<i; ++j) {
