@@ -222,7 +222,6 @@ SolverResults CpuSolver::computeHermition(MatrixXc& T, MatrixXc& V, MatrixXr& O)
     VectorXc eigenvals = eigenSolver.eigenvalues().cast<complex>();
 
     SolverResults out;
-    out.H = H;
     out.O = O;
     out.T = T;
     out.V = V;
@@ -291,7 +290,6 @@ SolverResults CpuSolver::computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O)
     delete[] A;
 
     SolverResults out;
-    out.H = H;
     out.O = O;
     out.T = T;
     out.V = V;

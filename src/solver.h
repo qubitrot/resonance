@@ -8,7 +8,6 @@
 
 struct SolverResults
 {
-    MatrixXc H;
     MatrixXc T;
     MatrixXc V;
     MatrixXr O;
