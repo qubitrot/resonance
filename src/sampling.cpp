@@ -188,8 +188,6 @@ void SampleSpace::learnStrain(uint strain, real impact)
         learnFreqList.pop_front();
     }
 
-    std::cout << learnFreqList.size() << "\n";
-
     for (uint i=0; i<strains.size(); ++i) {
         real count = 0;
         for (auto s : learnFreqList) {
@@ -197,7 +195,7 @@ void SampleSpace::learnStrain(uint strain, real impact)
         }
 
         real percent = 100 * count / learnFreqList.size();
-        std::cout << i << " - " << count << "%\n";
+        //std::cout << i << " - " << count << "%\n";
 
         //strains[i].second = percent;
     }

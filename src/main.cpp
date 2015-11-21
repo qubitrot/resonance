@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 
     std::cout << "Let's go!\n";
 
-    for (int i=0; i<10; ++i) {
+    for (int i=0; i<100; ++i) {
         driver->generateBasis(1);
         driver->writeBasis(outdir+"/basis.json");
         driver->writeConvergenceData(outdir+"/convergence.dat");
@@ -217,7 +217,8 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
     std::cout << "Parsing Driver\n";
 
     const Json::Value JDriver = root["driver"];
-    driver->targetState      = JDriver.get("target",0).asInt();
+    driver->targetState      = JDriver.get("targetState",0).asInt();
+    driver->targetEnergy     = JDriver.get("targetEnergy",1111).asDouble();
     driver->trialSize        = JDriver.get("trialSize",1).asInt();
     driver->numThreads       = JDriver.get("threads",1).asInt();
     driver->singularityLimit = JDriver.get("singularityLimit",5e-15).asDouble();

@@ -6,6 +6,7 @@
 
 Driver::Driver(System* sys, Solver* sol, SampleSpace* ss)
     : targetState(0)
+    , targetEnergy(1111)
     , trialSize(0)
     , numThreads(1)
     , singularityLimit(5e-14)
@@ -46,11 +47,10 @@ Basis Driver::generateBasis(uint size)
         std::vector<SolverResults*> caches;
         std::vector<std::thread> threads;
 
-        real targetenergy = -0.02;
-        if (basisCache.eigenvalues.size() > targetState &&
-            basisCache.eigenvalues[targetState].real() < targetenergy &&
-            basisCache.eigenvalues[targetState+1].real() != 0) {
-            //targetState++;
+        while (targetEnergy != 1111 &&
+            basisCache.eigenvalues.size() > targetState &&
+            basisCache.eigenvalues[targetState].real() < targetEnergy) {
+                targetState++;
         }
 
         std::cout << "target: " << targetState << "  ";
@@ -95,7 +95,7 @@ Basis Driver::generateBasis(uint size)
             std::cout << "strain: " << best.strain << "  ";
 
             if (basis.size() > targetState + 1) {
-                std::cout << "E = " << std::setprecision(18) << bev;
+                std::cout << "E = " << std::setprecision(18) << bev << "\n";
             } else {
                 std::cout << "\n";
             }

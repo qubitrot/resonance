@@ -22,7 +22,8 @@ public:
     void writeBasis(std::string file);
     void writeConvergenceData(std::string file);
 
-    uint targetState;
+    int  targetState;
+    real targetEnergy;
     uint trialSize;
     uint numThreads;
     real singularityLimit;
