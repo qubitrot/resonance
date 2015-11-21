@@ -71,19 +71,19 @@ int main(int argc, char* argv[])
     }
 
     if (basisFile != "none") {
-        driver->readBasis(basisFile);
+        driver->readBasis(basisFile,100);
     }
 
     std::cout << "Let's go!\n";
 
-    for (int i=0; i<0; ++i) {
+    for (int i=0; i<10; ++i) {
         driver->generateBasis(1);
         driver->writeBasis(outdir+"/basis.json");
         driver->writeConvergenceData(outdir+"/convergence.dat");
         //driver->targetState++;
     }
 
-    driver->sweepAngle(pi/10,pi/5,50);
+    driver->sweepAngle(0,pi/5,50);
 
     std::cout << "Deleting Driver.\n";
     delete driver;

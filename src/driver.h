@@ -18,7 +18,7 @@ public:
 
     void sweepAngle(real start, real end, uint steps);
 
-    void readBasis(std::string file);
+    void readBasis(std::string file, uint n=0, bool append=false);
     void writeBasis(std::string file);
     void writeConvergenceData(std::string file);
 

@@ -262,10 +262,11 @@ void Driver::writeBasis(std::string file)
     basisFile.flush();
 }
 
-void Driver::readBasis(std::string file)
+void Driver::readBasis(std::string file, uint n, bool append)
 {
     Json::Value  root;
     Json::Reader reader;
+
 
     std::ifstream basisFile(file, std::ifstream::binary);
     if (!basisFile.good()) {
@@ -277,7 +278,9 @@ void Driver::readBasis(std::string file)
     Basis newBasis;
 
     Json::Value set = root["basis"];
-    for (uint k=0; k<set.size(); ++k) {
+    if (n == 0) n = set.size();
+
+    for (uint k=0; k<set.size() && k<n; ++k) {
         Json::Value entry = set[k];
 
         uint n = std::sqrt(entry["A"].size());
@@ -310,7 +313,8 @@ void Driver::readBasis(std::string file)
         newBasis.push_back(cg);
     }
 
-    basis = newBasis;
+    if (append) basis.insert(basis.end(), newBasis.begin(), newBasis.end());
+    else        basis = newBasis;
 }
 
 void Driver::writeConvergenceData(std::string file)
