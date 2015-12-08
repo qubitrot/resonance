@@ -159,7 +159,7 @@ SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint
     return computeHermition(T,V,O);
 }
 
-SolverResults CpuSolver::solveRotation(const Basis& basis, real theta, SolverResults& unrot)
+SolverResults CpuSolver::solveRot(const Basis& basis, real theta, SolverResults& unrot)
 {
     const std::vector<Particle*>& particles = system->getParticles();
 
@@ -207,6 +207,69 @@ SolverResults CpuSolver::solveRotation(const Basis& basis, real theta, SolverRes
             }
             V(n,m) = V(m,n);
         }
+    }
+
+    return computeQZ(T,V,O);
+}
+
+SolverResults CpuSolver::solveRotRow(const Basis& basis, real theta, SolverResults& cache, uint row)
+{
+    const std::vector<Particle*>& particles = system->getParticles();
+
+    uint N    = particles.size();
+    uint size = basis.size();
+
+    MatrixXc T = cache.T;
+    MatrixXc V = cache.V;
+    MatrixXr O = cache.O;
+    T.conservativeResize(size,size);
+    V.conservativeResize(size,size);
+    O.conservativeResize(size,size);
+
+    uint n = row;
+    for (uint m=0; m<size; ++m) {
+        T(m,n) = 0;
+        V(m,n) = 0;
+        O(m,n) = 0;
+
+        auto              symFunc = symmetrize(basis[m]);
+        Basis&            A_sym   = std::get<0>(symFunc);
+        std::vector<int>& signs   = std::get<1>(symFunc);
+        uint              nperm   = std::get<2>(symFunc);
+
+        for (uint k=0; k<A_sym.size(); ++k) {
+            real ol = overlap(A_sym[k],basis[n]);
+
+            O(m,n) += signs[k]*nperm * ol;
+            T(m,n) += complex(signs[k]*nperm) * kinetic(A_sym[k],basis[n],ol);
+
+            for (uint i=0; i<N; ++ i) {
+                for (uint j=0; j<i; ++j) {
+                    std::string p1 = particles[i]->name;
+                    std::string p2 = particles[j]->name;
+
+                    real c_ij = genc_ij(A_sym[k],basis[n],i,j);
+
+                    const InteractionV& inter = system->getInteraction(p1,p2);
+                    switch (inter.type) {
+                        case InteractionV::Gaussian:
+                            V(m,n) += complex(signs[k]*nperm)
+                                    * gaussianV(inter.v0,inter.r0,theta,ol,c_ij);
+                            break;
+
+                        case InteractionV::Harmonic:
+                            break;
+                        case InteractionV::None:
+                            break;
+                    }
+                }
+            }
+        }
+        T(m,n) *= std::exp(complex(0,-2*theta));
+
+        O(n,m) = O(m,n);
+        T(n,m) = T(m,n);
+        V(n,m) = V(m,n);
     }
 
     return computeQZ(T,V,O);

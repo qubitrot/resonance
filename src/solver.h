@@ -24,18 +24,19 @@ public:
     //Compute and solve for ALL the Hamiltonian elements.
     virtual SolverResults solve(const Basis&)=0;
 
-    //Compute Hamiltonian elements only for one row/col
+    //Update/add row to already computed Hamiltonian/eigenvalues
     virtual SolverResults solveRow(const Basis&, SolverResults& cache, uint row)=0;
 
-    virtual SolverResults solveRotation(const Basis&, real theta, SolverResults& unrot)=0;
+    //Compute and solve for a complex rotation. Requires unrotated cache;
+    virtual SolverResults solveRot(const Basis&, real theta, SolverResults& unrot)=0;
+
+    //Update/add rot to already computed rotated Hamiltonian/eigenvalues;
+    virtual SolverResults solveRotRow(const Basis&, real theta, SolverResults& cache, uint row)=0;
 
     virtual real overlap(const CGaussian&, const CGaussian&)=0;
 
-    const SolverResults& results() { return sresults; }
-
 protected:
     System*  system;
-    SolverResults sresults;
 };
 
 class CpuSolver : public Solver
@@ -46,7 +47,8 @@ public:
 
     SolverResults solve(const Basis&);
     SolverResults solveRow(const Basis&, SolverResults& cache, uint row);
-    SolverResults solveRotation(const Basis&, real theta, SolverResults& unrot);
+    SolverResults solveRot(const Basis&, real theta, SolverResults& unrot);
+    SolverResults solveRotRow(const Basis&, real theta, SolverResults& cache, uint row);
 
     real overlap(const CGaussian&, const CGaussian&);
 
