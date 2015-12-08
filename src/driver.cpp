@@ -168,8 +168,8 @@ void Driver::sweepAngle(real start, real end, uint steps)
 {
     assert (basis.size() > 0);
 
-    std::vector<SolverResults> vsr;
-    vsr.resize(steps);
+    sweepData.resize(steps);
+    sweepMetaData = std::make_tuple(start,end,steps);
 
     real stepsize = (end-start)/(real)steps;
 
@@ -182,9 +182,9 @@ void Driver::sweepAngle(real start, real end, uint steps)
             real theta = start + stepsize*i;
             std::cout << i << " Solve angle " << theta << "\n";
 
-            vsr[i] = solver->solveRotation(basis,theta,basisCache);
+            sweepData[i] = solver->solveRotation(basis,theta,basisCache);
 
-            std::cout << vsr[i].eigenvalues[0] << "\n";
+            std::cout << sweepData[i].eigenvalues[0] << "\n";
         }
     } else {
         for (uint i=0; i<steps; ++i) {
@@ -197,7 +197,7 @@ void Driver::sweepAngle(real start, real end, uint steps)
 
                 std::cout << i << " Solve angle " << theta << "\n";
                 threads.push_back(threadify_member(
-                                  &Solver::solveRotation,solver,&vsr[i],basis,theta,basisCache));
+                                  &Solver::solveRotation,solver,&sweepData[i],basis,theta,basisCache));
                 i++;
             }
             i--;
@@ -207,15 +207,6 @@ void Driver::sweepAngle(real start, real end, uint steps)
                 it->join();
             }
         }
-    }
-
-    std::ofstream sweepFile("sweep.dat");
-
-    for (uint i=0; i<steps; ++i) {
-        sweepFile << start + stepsize*i;
-        for (auto a : vsr[i].eigenvalues)
-            sweepFile << "\t" << a.real() << " " << a.imag();
-        sweepFile << "\n";
     }
 }
 
@@ -259,14 +250,13 @@ void Driver::writeBasis(std::string file)
     std::ofstream basisFile;
     basisFile.open(file, std::ofstream::out);
     basisFile << root;
-    basisFile.flush();
+    basisFile.close();
 }
 
 void Driver::readBasis(std::string file, uint n, bool append)
 {
     Json::Value  root;
     Json::Reader reader;
-
 
     std::ifstream basisFile(file, std::ifstream::binary);
     if (!basisFile.good()) {
@@ -327,5 +317,25 @@ void Driver::writeConvergenceData(std::string file)
                  << " " << convergenceData[i].imag() <<  "\n";
     }
 
-    datafile.flush();
+    datafile.close();
+}
+
+void Driver::writeSweepData(std::string file)
+{
+    std::ofstream datafile;
+    datafile.open(file, std::ofstream::out);
+
+    real start    = std::get<0>(sweepMetaData);
+    real end      = std::get<1>(sweepMetaData);
+    real steps    = std::get<2>(sweepMetaData);
+    real stepsize = (end-start)/steps;
+
+    for (uint i=0; i<steps; ++i) {
+        datafile << start + stepsize*i;
+        for (auto a : sweepData[i].eigenvalues)
+            datafile << "\t" << a.real() << " " << a.imag();
+        datafile << "\n";
+    }
+
+    datafile.close();
 }

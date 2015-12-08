@@ -21,6 +21,7 @@ public:
     void readBasis(std::string file, uint n=0, bool append=false);
     void writeBasis(std::string file);
     void writeConvergenceData(std::string file);
+    void writeSweepData(std::string file);
 
     int  targetState;
     real targetEnergy;
@@ -38,6 +39,8 @@ private:
     SolverResults basisCache;
 
     std::vector<complex> convergenceData;
+    std::vector<SolverResults> sweepData;
+    std::tuple<real,real,uint> sweepMetaData; //start,end,steps
 
     static void findBestAddition(std::pair<CGaussian,complex>* out,Driver*,Basis trails,
                                  SolverResults* bcache,uint target,real singularityLimit);
