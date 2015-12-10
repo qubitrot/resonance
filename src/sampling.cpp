@@ -115,7 +115,7 @@ MatrixXr MatrixStrain::genWidths()
             auto key = std::make_pair(p1,p2);
 
             if(distributions.find(key) == distributions.end()) {
-                DEBUG_CERR("Width distribution no specfied for " << p1 << " and " << p2 << "\n");
+                DEBUG_CERR("Width distribution not specfied for " << p1 << " and " << p2 << "\n");
                 throw;
             }
 
@@ -123,6 +123,7 @@ MatrixXr MatrixStrain::genWidths()
             widths(k,l) = w;
             widths(l,k) = w;
         }
+        widths(k,k) = 0;
     }
 
     return widths;

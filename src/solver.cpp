@@ -156,7 +156,8 @@ SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint
         V(n,m) = V(m,n);
     }
 
-    return computeHermition(T,V,O);
+    if (basis.size() > 1) return computeRF(T,V,O,basis,cache);
+    else                  return computeHermition(T,V,O);
 }
 
 SolverResults CpuSolver::solveRot(const Basis& basis, real theta, SolverResults& unrot)
@@ -282,24 +283,32 @@ SolverResults CpuSolver::computeHermition(MatrixXc& T, MatrixXc& V, MatrixXr& O)
     Eigen::GeneralizedSelfAdjointEigenSolver<MatrixXc> eigenSolver;
     eigenSolver.compute(H,O.cast<complex>());
 
-    VectorXc eigenvals = eigenSolver.eigenvalues().cast<complex>();
+    VectorXc  eigenvals = eigenSolver.eigenvalues().cast<complex>();
+    MatrixXc  eigenvecs = eigenSolver.eigenvectors();
 
     SolverResults out;
     out.O = O;
     out.T = T;
     out.V = V;
 
-    out.eigenvalues.resize(eigenvals.rows());
-    for (int k=0; k<eigenvals.rows(); ++k) {
-        out.eigenvalues[k] = eigenvals(k);
+    std::vector<std::pair<complex,int>> sortvec;
+    for (uint k=0; k<eigenvals.rows(); ++k) {
+        sortvec.push_back( std::make_pair(eigenvals(k),k) );
     }
 
     struct {
-        bool operator()(complex a, complex b) {
-            return a.real() < b.real();
+        bool operator()(std::pair<complex,int> a, std::pair<complex,int> b) {
+            return a.first.real() < b.first.real();
         }
     } customLess;
-    std::sort(out.eigenvalues.begin(),out.eigenvalues.end(),customLess);
+    std::sort(sortvec.begin(),sortvec.end(),customLess);
+
+    out.eigenvalues.resize(eigenvals.rows());
+    out.eigenvectors.resize(eigenvals.rows());
+    for (int k=0; k<eigenvals.rows(); ++k) {
+        out.eigenvalues[k]  = sortvec[k].first;
+        out.eigenvectors[k] = eigenvecs.col( sortvec[k].second );
+    }
 
     return out;
 }
@@ -360,6 +369,26 @@ SolverResults CpuSolver::computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O)
 
     return out;
 }
+
+/*SolverResults CpuSolver::computeRF(MatrixXc& T, MatrixXc& V, MatrixXr& O,
+                                   const Basis& basis, SolverResults& uplft)
+{
+    real n = O.rows()-2; //the index of the last column before
+                         //new row was added;
+
+    real norm = O(n+1,n+1);
+    for (int i=0; i<n; ++i) {
+        real a = 0;
+        for (int j=0; j<n; ++j) {
+            a += uplft.eigenvectors[i](j).real() * overlap(basis[j],basis[n+1]);
+        }
+        norm -= std::abs(a) * std::abs(a);
+    }
+
+    std::cout << "N = \n" << norm << "\n\n ";
+
+    return computeHermition(T,V,O);
+}*/
 
 real CpuSolver::overlap(const CGaussian& A, const CGaussian& B)
 {
@@ -496,12 +525,6 @@ std::tuple<Basis,std::vector<int>,uint> CpuSolver::symmetrize(const CGaussian& A
         symA.push_back(cg);
         signs.push_back(perm.sign);
     }
-
-    /*std::cout << A.A << "\n";
-    std::cout << "PERMUTED:\n\n";
-    for (auto B : symA) {
-        std::cout << B.A << "\n\n";
-    }*/
 
     return std::make_tuple(symA,signs,permutations.size());
 }

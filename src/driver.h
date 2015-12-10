@@ -2,6 +2,7 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
+#include <map>
 #include "typedefs.h"
 #include "system.h"
 #include "sampling.h"
@@ -14,9 +15,10 @@ public:
     ~Driver();
 
     Basis generateTrials(uint size);
-    Basis generateBasis(uint size);
+    Basis generateBasis(uint size, bool rot=false, real start=0, real end=0, uint steps=0);
 
     void sweepAngle(real start, real end, uint steps);
+    void updateSweep(uint row);
 
     void readBasis(std::string file, uint n=0, bool append=false);
     void writeBasis(std::string file);
@@ -39,7 +41,7 @@ private:
     SolverResults basisCache;
 
     std::vector<complex> convergenceData;
-    std::vector<SolverResults> sweepData;
+    std::map<real,SolverResults> sweepData;
     std::tuple<real,real,uint> sweepMetaData; //start,end,steps
 
     static void findBestAddition(std::pair<CGaussian,complex>* out,Driver*,Basis trails,

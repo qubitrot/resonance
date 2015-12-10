@@ -70,38 +70,25 @@ int main(int argc, char* argv[])
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
 
-    /*if (basisFile != "none") {
-        driver->readBasis(basisFile);
+    if (basisFile != "none") {
+        //driver->readBasis(basisFile);
     }
 
     std::cout << "Let's go!\n";
 
-    for (int i=0; i<1; ++i) {
-        driver->generateBasis(100);
-        driver->writeBasis(outdir+"/basis.json");
-        driver->writeConvergenceData(outdir+"/convergence.dat");
-        //driver->targetState++;
-    }*/
+    for (int i=1000; i<1001; ++i) {
+        //driver->generateBasis(1);
+        //driver->generateBasis(1,true,0,pi/3,100);
+        driver->readBasis(basisFile,i);
 
-    driver->readBasis(basisFile,1000);
-    driver->sweepAngle(0,pi/6,40);
-    driver->writeSweepData(outdir+"/sweep1000.dat");
+        for (int j=0; j<100; j+=8) {
+            real start = j*pi/600.f;
+            real end   = (j+8)*pi/600.f;
+            driver->sweepAngle(start,end,8);
+            driver->writeSweepData(outdir+"/sweep" + std::to_string(i) + ".dat");
+        }
+    }
 
-    driver->readBasis(basisFile,1010);
-    driver->sweepAngle(0,pi/6,40);
-    driver->writeSweepData(outdir+"/sweep1010.dat");
-
-    driver->readBasis(basisFile,1020);
-    driver->sweepAngle(0,pi/6,40);
-    driver->writeSweepData(outdir+"/sweep1020.dat");
-
-    driver->readBasis(basisFile,1030);
-    driver->sweepAngle(0,pi/6,40);
-    driver->writeSweepData(outdir+"/sweep1030.dat");
-
-    driver->readBasis(basisFile,1040);
-    driver->sweepAngle(0,pi/6,40);
-    driver->writeSweepData(outdir+"/sweep1040.dat");
 
     std::cout << "Deleting Driver.\n";
     delete driver;

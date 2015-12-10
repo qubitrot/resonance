@@ -60,6 +60,7 @@ private:
 
     SolverResults computeHermition(MatrixXc& T, MatrixXc& V, MatrixXr& O);
     SolverResults computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O);
+    //SolverResults computeRF(MatrixXc& T, MatrixXc& V, MatrixXr& O, const Basis&, SolverResults& uplft);
 
     std::tuple<Basis,std::vector<int>,uint> symmetrize(const CGaussian&);
 };

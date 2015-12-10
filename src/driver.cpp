@@ -34,7 +34,7 @@ Basis Driver::generateTrials(uint n)
     return trials;
 }
 
-Basis Driver::generateBasis(uint size)
+Basis Driver::generateBasis(uint size, bool rot, real start, real end, uint steps)
 {
     if (basisCache.eigenvalues.size() != basis.size()) {
         basisCache = solver->solve(basis);
@@ -54,6 +54,7 @@ Basis Driver::generateBasis(uint size)
         }
 
         std::cout << "target: " << targetState << "  ";
+        std::flush(std::cout);
 
         for (uint i=0; i<numThreads; ++i) {
             candidates.push_back(new std::pair<CGaussian,complex>);
@@ -99,12 +100,22 @@ Basis Driver::generateBasis(uint size)
             } else {
                 std::cout << "\n";
             }
+
+            if (rot) {
+                if (sweepMetaData == std::make_tuple(start,end,steps)) {
+                    updateSweep(basis.size()-1);
+                } else {
+                    sweepAngle(start,end,steps);
+                }
+            }
+
+            sampleSpace->learnStrain(best.strain,0);
+
         } else {
             std::cout << "REDO: Too much linear dependance.\n";
             s--;
         }
 
-        sampleSpace->learnStrain(best.strain,0);
     }
 
     return basis;
@@ -130,7 +141,6 @@ void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver,
         test.push_back(cg);
 
         cache = driver->solver->solveRow(test,cache,test.size()-1);
-        //cache = driver->solver->solve(test);
 
         std::vector<complex> ev = cache.eigenvalues;
         if (lowestEV == complex(0,0) || ev[target].real() < lowestEV.real()) {
@@ -168,8 +178,8 @@ void Driver::sweepAngle(real start, real end, uint steps)
 {
     assert (basis.size() > 0);
 
-    sweepData.resize(steps);
-    sweepMetaData = std::make_tuple(start,end,steps);
+    //sweepMetaData = std::make_tuple(start,end,steps);
+    //sweepData.clear();
 
     real stepsize = (end-start)/(real)steps;
 
@@ -182,9 +192,7 @@ void Driver::sweepAngle(real start, real end, uint steps)
             real theta = start + stepsize*i;
             std::cout << i << " Solve angle " << theta << "\n";
 
-            sweepData[i] = solver->solveRot(basis,theta,basisCache);
-
-            std::cout << sweepData[i].eigenvalues[0] << "\n";
+            sweepData[theta] = solver->solveRot(basis,theta,basisCache);
         }
     } else {
         for (uint i=0; i<steps; ++i) {
@@ -197,10 +205,47 @@ void Driver::sweepAngle(real start, real end, uint steps)
 
                 std::cout << i << " Solve angle " << theta << "\n";
                 threads.push_back(threadify_member(
-                                  &Solver::solveRot,solver,&sweepData[i],basis,theta,basisCache));
+                                  &Solver::solveRot,solver,&sweepData[theta],basis,theta,basisCache));
                 i++;
             }
             i--;
+
+            auto it = threads.begin();
+            for (; it != threads.end(); ++it) {
+                it->join();
+            }
+        }
+    }
+}
+
+void Driver::updateSweep(uint row)
+{
+    assert (basis.size() > 0);
+
+    auto i = sweepData.begin();
+
+    if (numThreads == 1) {
+        for (; i != sweepData.end(); ++i) {
+            real theta = i->first;
+            SolverResults& cache = i->second;
+
+            sweepData[theta] = solver->solveRotRow(basis,theta,cache,row);
+        }
+    } else {
+        for (; i != sweepData.end(); ++i) {
+            std::vector<std::thread> threads;
+
+            for(uint n=0; n<numThreads; ++n) {
+                if (i == sweepData.end()) break;
+
+                real theta = i->first;
+                SolverResults& cache = i->second;
+
+                threads.push_back(threadify_member(
+                                  &Solver::solveRotRow,solver,&sweepData[theta],basis,theta,cache,row));
+                ++i;
+            }
+            --i;
 
             auto it = threads.begin();
             for (; it != threads.end(); ++it) {
@@ -325,14 +370,9 @@ void Driver::writeSweepData(std::string file)
     std::ofstream datafile;
     datafile.open(file, std::ofstream::out);
 
-    real start    = std::get<0>(sweepMetaData);
-    real end      = std::get<1>(sweepMetaData);
-    real steps    = std::get<2>(sweepMetaData);
-    real stepsize = (end-start)/steps;
-
-    for (uint i=0; i<steps; ++i) {
-        datafile << start + stepsize*i;
-        for (auto a : sweepData[i].eigenvalues)
+    for (auto& kv : sweepData) {
+        datafile << kv.first;
+        for (auto a : kv.second.eigenvalues)
             datafile << "\t" << a.real() << " " << a.imag();
         datafile << "\n";
     }
