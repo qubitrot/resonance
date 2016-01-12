@@ -388,7 +388,7 @@ void Driver::printEnergies(uint n)
 
     for (uint i=0; i<basisCache.eigenvalues.size() && i<n; ++i) {
         std::cout << "E" << i << " = ";
-        std::cout << basisCache.eigenvalues[i];
+        std::cout << std::setprecision(18) << basisCache.eigenvalues[i];
         std::cout << "\n";
     }
 }
