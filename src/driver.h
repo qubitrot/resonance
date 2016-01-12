@@ -24,6 +24,7 @@ public:
     void writeBasis(std::string file);
     void writeConvergenceData(std::string file);
     void writeSweepData(std::string file);
+    void printEnergies(uint n);
 
     int  targetState;
     real targetEnergy;

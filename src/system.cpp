@@ -30,7 +30,7 @@ void System::init()
                  if (j-i >  1) U(i,j) = 0;
             else if (j-i == 1) U(i,j) = -1;
             else               U(i,j) = masses[j] /
-                                        std::accumulate(masses.begin(),masses.begin()+i+1,0);
+                                        std::accumulate(masses.begin(),masses.begin()+i+1,0.d);
         }
     }
 

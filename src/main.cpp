@@ -70,25 +70,27 @@ int main(int argc, char* argv[])
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
 
+    int num = 1200;
+
     if (basisFile != "none") {
-        //driver->readBasis(basisFile);
+        driver->readBasis(basisFile,num);
     }
 
     std::cout << "Let's go!\n";
 
-    for (int i=1000; i<1001; ++i) {
-        //driver->generateBasis(1);
+    /*for (int i=0; i<8000; ++i) {
+        driver->generateBasis(1);
+        driver->writeConvergenceData(outdir+"/convergence.dat");
+        driver->writeBasis(outdir+"/basis.json");
         //driver->generateBasis(1,true,0,pi/3,100);
-        driver->readBasis(basisFile,i);
+        //driver->readBasis(basisFile,i);
+    }*/
 
-        for (int j=0; j<100; j+=8) {
-            real start = j*pi/600.f;
-            real end   = (j+8)*pi/600.f;
-            driver->sweepAngle(start,end,8);
-            driver->writeSweepData(outdir+"/sweep" + std::to_string(i) + ".dat");
-        }
-    }
+   // driver->writeBasis(outdir+"/basis.json");
+   // driver->sweepAngle(0,pi/8,100);
+   // driver->writeSweepData(outdir+"/sweep"+std::to_string(num)+".dat");
 
+    driver->printEnergies(10);
 
     std::cout << "Deleting Driver.\n";
     delete driver;

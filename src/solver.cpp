@@ -156,8 +156,7 @@ SolverResults CpuSolver::solveRow(const Basis& basis, SolverResults& cache, uint
         V(n,m) = V(m,n);
     }
 
-    if (basis.size() > 1) return computeRF(T,V,O,basis,cache);
-    else                  return computeHermition(T,V,O);
+    return computeHermition(T,V,O);
 }
 
 SolverResults CpuSolver::solveRot(const Basis& basis, real theta, SolverResults& unrot)

@@ -379,3 +379,16 @@ void Driver::writeSweepData(std::string file)
 
     datafile.close();
 }
+
+void Driver::printEnergies(uint n)
+{
+    if (basisCache.eigenvalues.size() != basis.size()) {
+        basisCache = solver->solve(basis);
+    }
+
+    for (uint i=0; i<basisCache.eigenvalues.size() && i<n; ++i) {
+        std::cout << "E" << i << " = ";
+        std::cout << basisCache.eigenvalues[i];
+        std::cout << "\n";
+    }
+}
