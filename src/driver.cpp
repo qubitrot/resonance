@@ -204,8 +204,8 @@ void Driver::sweepAngle(real start, real end, uint steps)
                 if (i >= steps) break;
 
                 std::cout << i << " Solve angle " << theta << "\n";
-                threads.push_back(threadify_member(
-                                  &Solver::solveRot,solver,&sweepData[theta],basis,theta,basisCache));
+                threads.push_back(threadify(
+                                  &Solver::solveRot,&sweepData[theta],solver,basis,theta,basisCache));
                 i++;
             }
             i--;
@@ -241,8 +241,8 @@ void Driver::updateSweep(uint row)
                 real theta = i->first;
                 SolverResults& cache = i->second;
 
-                threads.push_back(threadify_member(
-                                  &Solver::solveRotRow,solver,&sweepData[theta],basis,theta,cache,row));
+                threads.push_back(threadify(
+                                  &Solver::solveRotRow,&sweepData[theta],solver,basis,theta,cache,row));
                 ++i;
             }
             --i;
