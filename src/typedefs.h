@@ -43,33 +43,51 @@ constexpr real twopi = 2*pi;
 constexpr real hbar  = 1;
 
 //Wrapper to make a function return to a pointer supplied as an argument
+//if NOT member function pointer
 template<typename F, typename T, typename... P>
-void void_wrapper(F *func, T* out, P... params)
+typename std::enable_if<!std::is_member_function_pointer<F>::value>::type
+    void_wrapper(F func, T* out, P... params)
 {
     *out = (*func)(params...);
 }
 
+//if member function pointer
+template<typename F, typename T, typename... P>
+typename std::enable_if<std::is_member_function_pointer<F>::value>::type
+    void_wrapper(F func, T* out, P... params)
+{
+    void_member_wrapper(func, out, params...);
+}
+
 //Same thing for member functions
 template<class C, typename F, typename T, typename... P>
-void void_member_wrapper(F C::* func, C* c, T* out, P... params)
+void void_member_wrapper(F C::* func, T* out, C* c, P... params)
 {
     *out = (c->*func)(params...);
 }
 
 //Take a function returning non-void and run it as a thread, with
 //output directed through a pointer
+//if NOT member function pointer
 template<typename F, typename T, typename... P>
-std::thread threadify(F *func, T* out, P... params)
+typename std::enable_if<!std::is_member_function_pointer<F>::value, std::thread>::type
+    threadify(F func, T* out, P... params)
 {
     return std::thread(void_wrapper<F,T,P...>,func,out,params...);
+}
 
+//if member function pointer
+template<typename F, typename T, typename... P>
+typename std::enable_if<std::is_member_function_pointer<F>::value, std::thread>::type
+    threadify(F func, T* out, P... params)
+{
+    return threadify_member(func, out, params...);
 }
 
 template<class C, typename F, typename T, typename... P>
-std::thread threadify_member(F C::* func, C* c, T* out, P... params)
+std::thread threadify_member(F C::* func, T* out, C* c, P... params)
 {
-    return std::thread(void_member_wrapper<C,F,T,P...>,func,c,out,params...);
-
+    return std::thread(void_member_wrapper<C,F,T,P...>,func,out,c,params...);
 }
 
 namespace std {
