@@ -1,7 +1,10 @@
 #include <ctime>
 #include "sampling.h"
 
-SamplingDistribution::SamplingDistribution(int seed)
+SamplingDistribution::SamplingDistribution(int seed, bool learn, uint hsize)
+    : learning(learn)
+    , hist_size(hsize)
+    , hist_index(0)
 {
     if (seed != -1) rand.seed(seed);
     else            rand.seed(std::time(nullptr));
@@ -11,7 +14,7 @@ SamplingDistribution::~SamplingDistribution()
 {}
 
 SD_Uniform::SD_Uniform(real mn, real mx, int seed)
-    : SamplingDistribution(seed)
+    : SamplingDistribution(seed,0,0)
     , min(mn)
     , max(mx)
 {}
@@ -30,13 +33,19 @@ real SD_Uniform::operator()()
     return out;
 }
 
-SD_Gaussian::SD_Gaussian(real avg, real std, real mn, real mx, int seed)
-    : SamplingDistribution(seed)
+SD_Gaussian::SD_Gaussian(real avg, real std, real mn, real mx,
+                         int seed, bool learn, uint hsize)
+    : SamplingDistribution(seed,learn,hsize)
     , mean(avg)
     , stdev(std)
     , min(mn)
     , max(mx)
-{}
+{
+    history.resize(hist_size);
+    for (uint i=0; i<hist_size; ++i) {
+        history[i] = (*this)();
+    }
+}
 
 SD_Gaussian::~SD_Gaussian()
 {}
@@ -51,6 +60,28 @@ real SD_Gaussian::operator()()
     } while (out <= 0 || (min != max && (out < min || out > max)));
 
     return out;
+}
+
+void SD_Gaussian::learn(real val, real impact)
+{
+    if (learning) {
+        history[hist_index] = val;
+
+        hist_index++;
+        hist_index = hist_index % hist_size;
+
+        mean = std::accumulate(history.begin(),history.end(),0.d)
+             / hist_size;
+
+        real acc = 0;
+        for (auto a : history) {
+            acc += a*a;
+        }
+
+        stdev = std::sqrt(acc/hist_size - mean*mean);
+    }
+
+    std::cout << "u = " << mean << " s = " << stdev << "\n";
 }
 
 MatrixStrain::MatrixStrain(System* sys)
@@ -90,6 +121,20 @@ void MatrixStrain::computeCG(CGaussian* cg, System* sys)
     }
 
     cg->norm = std::pow( std::pow(twopi,N-1)/(2*cg->A).determinant() , -3./4.);
+}
+
+void MatrixStrain::learn(CGaussian& cg, real impact)
+{
+    MatrixXr& widths = cg.widths;
+
+    for (uint m=0; m<widths.rows(); ++m) {
+        for (uint n=0; n<m; ++n) {
+            std::string p1 = particles[m]->name;
+            std::string p2 = particles[n]->name;
+
+            distributions[std::make_pair(p1,p2)]->learn(widths(m,n),0);
+        }
+    }
 }
 
 CGaussian MatrixStrain::genMatrix()
@@ -170,36 +215,9 @@ uint SampleSpace::chooseStrain()
     return n;
 }
 
-void SampleSpace::learnStrain(uint strain, real impact)
+void SampleSpace::learn(CGaussian& cg, real impact)
 {
-    /*if (learnFreqList.size() < 100) {
-        for (uint i=0; i<strains.size(); ++i) {
-            real percent = 100 * strains[i].second / totalFreq;
-            for (uint j=0; j<percent; ++j) {
-                learnFreqList.push_back( std::make_pair(i,1) );
-            }
-        }
-    }
-    while (learnFreqList.size() < 100) {
-        learnFreqList.push_back( std::make_pair(0,1) );
-    }*/
-
-    learnFreqList.push_back( std::make_pair(strain,impact) );
-    if (learnFreqList.size() > 100) {
-        learnFreqList.pop_front();
-    }
-
-    for (uint i=0; i<strains.size(); ++i) {
-        real count = 0;
-        for (auto s : learnFreqList) {
-            if (s.first == i) count++;
-        }
-
-        real percent = 100 * count / learnFreqList.size();
-        //std::cout << i << " - " << count << "%\n";
-
-        //strains[i].second = percent;
-    }
+    strains[cg.strain].first->learn(cg,impact);
 }
 
 void SampleSpace::addStrain(MatrixStrain* ms, uint freq)

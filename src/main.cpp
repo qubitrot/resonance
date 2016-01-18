@@ -78,17 +78,17 @@ int main(int argc, char* argv[])
 
     std::cout << "Let's go!\n";
 
-    /*for (int i=0; i<8000; ++i) {
+    for (int i=0; i<8000; ++i) {
         driver->generateBasis(1);
         driver->writeConvergenceData(outdir+"/convergence.dat");
         driver->writeBasis(outdir+"/basis.json");
         //driver->generateBasis(1,true,0,pi/3,100);
         //driver->readBasis(basisFile,i);
-    }*/
+    }
 
-   // driver->writeBasis(outdir+"/basis.json");
-   // driver->sweepAngle(0,pi/8,100);
-   // driver->writeSweepData(outdir+"/sweep"+std::to_string(num)+".dat");
+    driver->writeBasis(outdir+"/basis.json");
+    driver->sweepAngle(0,pi/8,100);
+    driver->writeSweepData(outdir+"/sweep"+std::to_string(num)+".dat");
 
     driver->printEnergies(10);
 
@@ -189,8 +189,10 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
             double max = dists[k].get("max",0).asDouble();
             double avg = dists[k].get("mean",0).asDouble();
             double std = dists[k].get("std",1).asDouble();
+            bool learn = dists[k].get("learn",0).asBool();
+            uint hsize = dists[k].get("history",100).asInt();
 
-            distributions[name] = std::shared_ptr<SamplingDistribution>(new SD_Gaussian(avg,std,min,max));
+            distributions[name] = std::shared_ptr<SamplingDistribution>(new SD_Gaussian(avg,std,min,max,-1,learn,hsize));
         }
     }
 

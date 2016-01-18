@@ -13,13 +13,19 @@ class SampleSpace;
 class SamplingDistribution
 {
 public:
-    SamplingDistribution(int seed=-1); //0 = seed by time
+    SamplingDistribution(int seed, bool learn, uint hsize); //0 = seed by time
     virtual ~SamplingDistribution();
 
     virtual real operator()()=0;
+    virtual void learn(real,real) {};
 
 protected:
     std::minstd_rand rand;
+    bool learning;
+
+    uint hist_size;
+    uint hist_index;
+    std::vector<real> history;
 };
 
 class SD_Uniform : public SamplingDistribution
@@ -39,10 +45,12 @@ class SD_Gaussian : public SamplingDistribution
 {
 public:
     //If min=max, then then there is no min/max
-    SD_Gaussian(real avg, real std, real mn=0, real mx=0, int seed=-1);
+    SD_Gaussian(real avg, real std, real mn, real mx,
+                int seed, bool learn, uint hsize);
     ~SD_Gaussian();
 
     virtual real operator()();
+    virtual void learn(real,real);
 
 private:
     real mean;
@@ -68,6 +76,8 @@ public:
     void setDistribution(std::string& p1, std::string& p2,
                          const std::shared_ptr<SamplingDistribution>& sd);
 
+    void learn(CGaussian&, real impact);
+
 private:
     std::unordered_map<
         std::pair<std::string,std::string>,
@@ -82,7 +92,7 @@ private:
 
 class SampleSpace
 {
-    public:
+public:
     SampleSpace();
     ~SampleSpace();
 
@@ -90,11 +100,11 @@ class SampleSpace
     CGaussian genMatrix(int s = -1);
     uint chooseStrain();
 
-    void learnStrain(uint strain,real impact);
+    void learn(CGaussian&, real impact);
 
     void addStrain(MatrixStrain*,uint);
 
-    private:
+private:
     std::vector<
         std::pair<MatrixStrain*,real>
     > strains;

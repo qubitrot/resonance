@@ -109,7 +109,7 @@ Basis Driver::generateBasis(uint size, bool rot, real start, real end, uint step
                 }
             }
 
-            sampleSpace->learnStrain(best.strain,0);
+            sampleSpace->learn(best,0);
 
         } else {
             std::cout << "REDO: Too much linear dependance.\n";
