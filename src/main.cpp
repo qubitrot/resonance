@@ -189,10 +189,11 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
             double max = dists[k].get("max",0).asDouble();
             double avg = dists[k].get("mean",0).asDouble();
             double std = dists[k].get("std",1).asDouble();
+            double msf = dists[k].get("mstdf",1).asDouble();
             bool learn = dists[k].get("learn",0).asBool();
             uint hsize = dists[k].get("history",100).asInt();
 
-            distributions[name] = std::shared_ptr<SamplingDistribution>(new SD_Gaussian(avg,std,min,max,-1,learn,hsize));
+            distributions[name] = std::shared_ptr<SamplingDistribution>(new SD_Gaussian(avg,std,min,max,msf,-1,learn,hsize));
         }
     }
 

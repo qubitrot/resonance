@@ -6,10 +6,10 @@
 
     "driver" : {
         "targetState"  : 0,
-        "targetEnergy" : -50,
+        //"targetEnergy" : -50,
         "threads"      : 6,
         "basisMax"     : 60,
-        "trialSize"    : 1, //per thread
+        "trialSize"    : 10, //per thread
         "singularityLimit" : 1e-12,
         "forceDiversity" : 0 
     },
@@ -75,8 +75,9 @@
             {
                 "name"     : "order1",
                 "type"     : "gaussian",
-                "mean"     : 1,
+                "mean"     : 0,
                 "std"      : 1,
+                "mstdf"    : 0,
                 "min"      : 0,
                 "max"      : 0, 
                 "learn"    : 1,

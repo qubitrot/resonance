@@ -33,13 +33,14 @@ real SD_Uniform::operator()()
     return out;
 }
 
-SD_Gaussian::SD_Gaussian(real avg, real std, real mn, real mx,
+SD_Gaussian::SD_Gaussian(real avg, real std, real mn, real mx, real mstdf,
                          int seed, bool learn, uint hsize)
     : SamplingDistribution(seed,learn,hsize)
     , mean(avg)
     , stdev(std)
     , min(mn)
     , max(mx)
+    , min_std_fac(mstdf)
 {
     history.resize(hist_size);
     for (uint i=0; i<hist_size; ++i) {
@@ -79,6 +80,9 @@ void SD_Gaussian::learn(real val, real impact)
         }
 
         stdev = std::sqrt(acc/hist_size - mean*mean);
+
+        if (stdev < mean * min_std_fac)
+            stdev = mean * min_std_fac;
     }
 
     std::cout << "u = " << mean << " s = " << stdev << "\n";

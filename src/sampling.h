@@ -45,7 +45,7 @@ class SD_Gaussian : public SamplingDistribution
 {
 public:
     //If min=max, then then there is no min/max
-    SD_Gaussian(real avg, real std, real mn, real mx,
+    SD_Gaussian(real avg, real std, real mn, real mx, real mstdf,
                 int seed, bool learn, uint hsize);
     ~SD_Gaussian();
 
@@ -57,6 +57,7 @@ private:
     real stdev;
     real min;
     real max;
+    real min_std_fac;
 };
 
 class MatrixStrain
