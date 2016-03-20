@@ -6,11 +6,10 @@
 
     "driver" : {
         "targetState"  : 0,
-        //"targetEnergy" : -50,
-        "threads"      : 6,
+        "threads"      : 1,
         "basisMax"     : 60,
-        "trialSize"    : 10, //per thread
-        "singularityLimit" : 1e-12,
+        "trialSize"    : 1000, //per thread
+        "singularityLimit" : 1e-24,
         "forceDiversity" : 0 
     },
 
@@ -77,9 +76,20 @@
                 "type"     : "gaussian",
                 "mean"     : 0,
                 "std"      : 1,
-                "mstdf"    : 0,
+                "mstdf"    : 1,
                 "min"      : 0,
-                "max"      : 0, 
+                "max"      : 2, 
+                "learn"    : 1,
+                "history"  : 50
+            },
+            {
+                "name"     : "order2",
+                "type"     : "gaussian",
+                "mean"     : 2,
+                "std"      : 4,
+                "mstdf"    : 1,
+                "min"      : 1,
+                "max"      : 4, 
                 "learn"    : 1,
                 "history"  : 50
             }
@@ -87,7 +97,7 @@
 
         "strains" : [
             {
-                "frequency" : 30, 
+                "frequency" : 10, 
                 "pairs" : [
                     {
                         "pair" : [ "boson1","boson2" ],
@@ -100,6 +110,35 @@
                     {
                         "pair" : [ "boson1","boson4" ],
                         "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson2","boson3" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson2","boson4" ],
+                        "distribution" : "order1"
+                    },
+                    {
+                        "pair" : [ "boson3","boson4" ],
+                        "distribution" : "order1"
+                    }
+                ]
+            },
+            {
+                "frequency" : 10, 
+                "pairs" : [
+                    {
+                        "pair" : [ "boson1","boson2" ],
+                        "distribution" : "order2"
+                    },
+                    {
+                        "pair" : [ "boson1","boson3" ],
+                        "distribution" : "order2"
+                    },
+                    {
+                        "pair" : [ "boson1","boson4" ],
+                        "distribution" : "order2"
                     },
                     {
                         "pair" : [ "boson2","boson3" ],

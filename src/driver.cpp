@@ -1,316 +1,231 @@
-#include <thread>
-#include <fstream>
+#include <iostream>
 #include <iomanip>
+#include <fstream>
+#include <random>
+#include <stack>
+#include <thread>
+#include <mutex>
 #include "driver.h"
 #include "json/json.h"
+#include "profiler/profiler.h"
 
-Driver::Driver(System* sys, Solver* sol, SampleSpace* ss)
-    : targetState(0)
-    , targetEnergy(1111)
-    , trialSize(0)
-    , numThreads(1)
-    , singularityLimit(5e-14)
-    , forceDiversity(false)
+Driver::Driver(System* sys, SampleSpace* ss)
+    : target_state(0)
+    , target_energy(-10)
+    , targeting_energy(false)
+    , trial_size(100)
+    , singularity_limit(1e-10)
+    , threads(1)
     , system(sys)
-    , solver(sol)
-    , sampleSpace(ss)
+    , sample_space(ss)
 {}
 
 Driver::~Driver()
 {}
 
-Basis Driver::generateTrials(uint n)
+ConvergenceData Driver::expand_basis(Basis& basis, uint size)
 {
-    Basis trials;
-    int strainN = -1;
-    if (forceDiversity) strainN = sampleSpace->chooseStrain();
-
-    for (uint s=0; s<n; ++s) {
-        CGaussian cg;
-        cg = sampleSpace->genMatrix(strainN);
-        trials.push_back(cg);
-    }
-
-    return trials;
+    Solution<real> empty_cache;
+    return expand_basis(basis,empty_cache,size);
 }
 
-Basis Driver::generateBasis(uint size, bool rot, real start, real end, uint steps)
+ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint size)
 {
-    if (basisCache.eigenvalues.size() != basis.size()) {
-        basisCache = solver->solve(basis);
-    }
+    PROFILE();
+
+    SolverCPU<real> solver(system);
+
+    ConvergenceData out;
+    out.offset = basis.size();
 
     for (uint s=0; s<size; ++s) {
-        std::cout << basis.size() << " | ";
-
-        std::vector<std::pair<CGaussian,complex>*> candidates;
-        std::vector<SolverResults*> caches;
-        std::vector<std::thread> threads;
-
-        while (targetEnergy != 1111 &&
-            basisCache.eigenvalues.size() > targetState &&
-            basisCache.eigenvalues[targetState].real() < targetEnergy) {
-                targetState++;
-        }
-
-        std::cout << "target: " << targetState << "  ";
+        std::cout << basis.size()+1 << " | ";
         std::flush(std::cout);
 
-        for (uint i=0; i<numThreads; ++i) {
-            candidates.push_back(new std::pair<CGaussian,complex>);
-            caches.push_back(new SolverResults);
-            *caches[i] = basisCache;
-            threads.push_back(
-                    std::thread(Driver::findBestAddition,candidates[i],this,generateTrials(trialSize),
-                                caches[i],targetState,singularityLimit)
-            );
-        }
+        std::mutex mtx;
+        std::stack<
+            std::pair<CorrelatedGaussian,
+                      Solution<real>>
+        > trial_stack;
 
-        auto it = threads.begin();
-        for (; it != threads.end(); ++it) {
-            it->join();
-        }
+        uint target = target_state;
+        if (basis.size() < target_state)
+            target = basis.size();
 
-        bool redo = true; //to accomidate the possibility that all trials
-                          //exhibit too much linear dependance.
+        std::cout << "target: " << target << ", ";
 
-        CGaussian best = candidates[0]->first;
-        complex   bev  = candidates[0]->second;
-        basisCache = *caches[0];
-        for (uint i=0; i<candidates.size(); ++i) {
-            auto c = candidates[i];
-            if (c->first.A.rows() != 0 && c->second.real() <= bev.real()) {
-                redo = false;
-                best = c->first;
-                bev  = c->second;
-                basisCache = *caches[i];
-            }
-            delete c;
-            delete caches[i];
-        }
+        auto trial_thread = [&]() {
+            Basis trials = generate_trials(trial_size);
 
-        if (!redo) {
-            basis.push_back(best);
-            convergenceData.push_back(bev);
+            for (uint i=0; i<trial_size; ++i) {
+                CorrelatedGaussian trial = trials[i];
 
-            std::cout << "strain: " << best.strain << "  ";
+                Basis trial_basis = basis;
+                trial_basis.push_back(trial);
 
-            if (basis.size() > targetState + 1) {
-                std::cout << "E = " << std::setprecision(18) << bev << "\n";
-            } else {
-                std::cout << "\n";
-            }
+                Solution<real> trial_solution = solver.solve(trial_basis,cache);
 
-            if (rot) {
-                if (sweepMetaData == std::make_tuple(start,end,steps)) {
-                    updateSweep(basis.size()-1);
-                } else {
-                    sweepAngle(start,end,steps);
+                mtx.lock();
+                if (trial_stack.empty() ||
+                    trial_solution.eigenvalues[target] <
+                    trial_stack.top().second.eigenvalues[target]) {
+                        trial_stack.push( std::make_pair(trial,trial_solution) );
                 }
+                mtx.unlock();
             }
+        };
 
-            sampleSpace->learn(best,0);
-
+        if (threads == 1) {
+            trial_thread();
         } else {
-            std::cout << "REDO: Too much linear dependance.\n";
+            std::vector<std::thread> thread_vec;
+            for (uint i=0; i<threads; ++i) {
+                thread_vec.push_back(std::thread(trial_thread));
+            }
+            for (uint i=0; i<threads; ++i) {
+                thread_vec[i].join();
+            }
+        }
+
+        std::cout << trial_stack.size() << "  ";
+
+        //Make sure there is not too much linear dependance
+        bool everything_fails_SVD = true;
+        while (!trial_stack.empty()) {
+            Solution<real> trial_solution = trial_stack.top().second;
+
+            if (check_SVD(trial_solution.O)) {
+                basis.push_back(trial_stack.top().first);
+                cache = trial_solution;
+                sample_space->learn(trial_stack.top().first,0);
+                everything_fails_SVD = false;
+                break;
+            }
+            trial_stack.pop();
+        }
+
+        if (everything_fails_SVD) {
+            std::cout << " ALL TRIALS FAILED SVD\n";
             s--;
-        }
+        } else {
+            solver.solve(cache,true); //get eigenvectors;
+            out.eigenvalues.push_back( cache.eigenvalues );
+            std::cout << " strain: " << trial_stack.top().first.strain << " : "
+                      << std::setprecision(10) << cache.eigenvalues[target] << "\n";
 
+            if (targeting_energy && target == target_state &&
+                cache.eigenvalues[target] < target_energy)
+                target_state++;
+        }
     }
 
-    return basis;
+    return out;
 }
 
-void Driver::findBestAddition(std::pair<CGaussian,complex>* out, Driver* driver, Basis trials,
-                              SolverResults* bcache, uint target, real singularityLimit)
+bool Driver::check_SVD(Matrix<real>& O)
 {
-    CGaussian best;
-    complex lowestEV = complex(0,0);
+    PROFILE();
 
-    SolverResults cache = *bcache;
+    /*Eigen::JacobiSVD<Matrix<real>> svd(O);
 
-    if (target >= driver->basis.size())
-        target  = driver->basis.size();
-
-    out->first.A.resize(0,0); //"uninitialized" used for redo check
-
-    std::stack< std::tuple<CGaussian,complex,SolverResults> > stack;
-
-    for (auto cg : trials) {
-        Basis test = driver->basis;
-        test.push_back(cg);
-
-        cache = driver->solver->solveRow(test,cache,test.size()-1);
-
-        std::vector<complex> ev = cache.eigenvalues;
-        if (lowestEV == complex(0,0) || ev[target].real() < lowestEV.real()) {
-            stack.push(
-                    std::make_tuple(cg,ev[target],cache)
-            );
-            lowestEV = ev[target];
+    real lowest_sv = svd.singularValues()(0);
+    for (uint i=0; i<svd.singularValues().rows(); ++i) {
+        if (svd.singularValues()(i) < lowest_sv) {
+            lowest_sv = svd.singularValues()(i);
         }
+    }*/
+
+    Eigen::SelfAdjointEigenSolver<Matrix<real>> eigen_solver(O);
+
+    real lowest_sv2 = eigen_solver.eigenvalues()(0);
+    for (uint i=0; i<eigen_solver.eigenvalues().rows(); ++i) {
+        if (eigen_solver.eigenvalues()(i) < lowest_sv2)
+            lowest_sv2 = eigen_solver.eigenvalues()(i);
     }
 
-    while (!stack.empty()) {
-        auto candidate = stack.top();
-        MatrixXr& O    = std::get<2>(candidate).O;
+    if (lowest_sv2 > singularity_limit) return true;
 
-        //Make sure there's not too much linear dependance
-        Eigen::JacobiSVD<MatrixXr> svd(O);
-        real lowestSV = svd.singularValues()(0);
-        for (uint i=0; i<svd.singularValues().rows(); ++i) {
-            if (svd.singularValues()(i) < lowestSV) lowestSV = svd.singularValues()(i);
-        }
+    std::cout << "!";
+    std::flush(std::cout);
 
-        if (lowestSV > singularityLimit) {
-            out->first  = std::get<0>(candidate);
-            out->second = std::get<1>(candidate);
-            *bcache     = std::get<2>(candidate);
-
-            break;
-        }
-
-        stack.pop();
-    }
+    return false;
 }
 
-void Driver::sweepAngle(real start, real end, uint steps)
+Basis Driver::generate_trials(uint n)
 {
-    assert (basis.size() > 0);
+    PROFILE();
 
-    //sweepMetaData = std::make_tuple(start,end,steps);
-    //sweepData.clear();
+    Basis out;
+    const std::vector<Particle>& particles = system->get_particles();
 
-    real stepsize = (end-start)/(real)steps;
+    for (uint i=0; i<n; ++i) {
+        CorrelatedGaussian cg = sample_space->gen_widths(particles);
+        system->transform_cg(cg);
 
-    if (basisCache.eigenvalues.size() != basis.size()) {
-        basisCache = solver->solve(basis);
+        out.push_back(cg);
     }
 
-    if (numThreads == 1) {
-        for (uint i=0; i<steps; ++i) {
-            real theta = start + stepsize*i;
-            std::cout << i << " Solve angle " << theta << "\n";
-
-            sweepData[theta] = solver->solveRot(basis,theta,basisCache);
-        }
-    } else {
-        for (uint i=0; i<steps; ++i) {
-            std::vector<std::thread> threads;
-
-            for(uint n=0; n<numThreads; ++n) {
-                real theta = start + stepsize*i;
-
-                if (i >= steps) break;
-
-                std::cout << i << " Solve angle " << theta << "\n";
-                threads.push_back(threadify(
-                                  &Solver::solveRot,&sweepData[theta],solver,basis,theta,basisCache));
-                i++;
-            }
-            i--;
-
-            auto it = threads.begin();
-            for (; it != threads.end(); ++it) {
-                it->join();
-            }
-        }
-    }
+    return out;
 }
 
-void Driver::updateSweep(uint row)
+SweepData Driver::sweep_basis(Basis& basis, real start, real end, uint steps)
 {
-    assert (basis.size() > 0);
-
-    auto i = sweepData.begin();
-
-    if (numThreads == 1) {
-        for (; i != sweepData.end(); ++i) {
-            real theta = i->first;
-            SolverResults& cache = i->second;
-
-            sweepData[theta] = solver->solveRotRow(basis,theta,cache,row);
-        }
-    } else {
-        for (; i != sweepData.end(); ++i) {
-            std::vector<std::thread> threads;
-
-            for(uint n=0; n<numThreads; ++n) {
-                if (i == sweepData.end()) break;
-
-                real theta = i->first;
-                SolverResults& cache = i->second;
-
-                threads.push_back(threadify(
-                                  &Solver::solveRotRow,&sweepData[theta],solver,basis,theta,cache,row));
-                ++i;
-            }
-            --i;
-
-            auto it = threads.begin();
-            for (; it != threads.end(); ++it) {
-                it->join();
-            }
-        }
-    }
+    Solution<complex> empty_cache;
+    return sweep_basis(basis,empty_cache,start,end,steps);
 }
 
-void Driver::writeBasis(std::string file)
+SweepData Driver::sweep_basis(Basis& basis, Solution<complex>& cache,
+                              real start, real end, uint steps)
 {
-    Json::Value root;
+    PROFILE();
 
-    Json::Value metadata(Json::objectValue);
-    metadata["size"] = Json::Value::UInt(basis.size());
-    root["metadata"] = metadata;
+    SolverCPU<complex> solver(system);
 
-    Json::Value set(Json::arrayValue);
-    for (auto cg : basis) {
-        Json::Value entry(Json::objectValue);
+    SweepData out;
 
-        MatrixXr A = cg.A;
-        Json::Value aMatrix(Json::arrayValue);
-        for (int i=0; i<A.rows(); ++i) {
-            for (int j=0; j<A.cols(); ++j) {
-                aMatrix.append(Json::Value( A(i,j) ));
-            }
-        }
+    real step_size = (end-start)/steps;
 
-        MatrixXr widths = cg.widths;
-        Json::Value wMatrix(Json::arrayValue);
-        for (int i=0; i<widths.rows(); ++i) {
-            for (int j=0; j<widths.cols(); ++j) {
-                wMatrix.append(Json::Value( widths(i,j) ));
-            }
-        }
+    for (uint i=0; i<steps; ++i) {
+        real theta = start + i*step_size;
 
-        entry["A"]      = aMatrix;
-        entry["widths"] = wMatrix;
-        entry["norm"]   = cg.norm;
+        std::cout << "theta = " << theta << " | ";
+        std::flush(std::cout);
 
-        set.append(entry);
+        Solution<complex> sol = solver.solve(basis,cache,false,theta);
+
+        sol.eigenvectors.clear();
+        sol.K.resize(0,0);
+        sol.V.resize(0,0);
+        sol.O.resize(0,0);
+
+        out.sweep_vec.push_back( std::make_pair(theta,sol) );
+
+        std::cout << "done.\n";
     }
 
-    root["basis"] = set;
+    out.start     = start;
+    out.end       = end;
+    out.steps     = steps;
+    out.step_size = step_size;
 
-    std::ofstream basisFile;
-    basisFile.open(file, std::ofstream::out);
-    basisFile << root;
-    basisFile.close();
+    return out;
 }
 
-void Driver::readBasis(std::string file, uint n, bool append)
+Basis Driver::read_basis(std::string file, uint n)
 {
+    PROFILE();
+
     Json::Value  root;
     Json::Reader reader;
 
-    std::ifstream basisFile(file, std::ifstream::binary);
-    if (!basisFile.good()) {
-        return;
+    std::ifstream basis_file(file, std::ifstream::binary);
+    if (!basis_file.good()) {
+        throw;
     }
 
-    basisFile >> root;
+    basis_file >> root;
 
-    Basis newBasis;
+    Basis basis;
 
     Json::Value set = root["basis"];
     if (n == 0) n = set.size();
@@ -319,7 +234,7 @@ void Driver::readBasis(std::string file, uint n, bool append)
         Json::Value entry = set[k];
 
         uint n = std::sqrt(entry["A"].size());
-        MatrixXr A;
+        Matrix<real> A;
         A.resize(n,n);
 
         for (uint i=0; i<n; ++i) {
@@ -329,7 +244,7 @@ void Driver::readBasis(std::string file, uint n, bool append)
         }
 
         uint m = std::sqrt(entry["widths"].size());
-        MatrixXr widths;
+        Matrix<real> widths;
         widths.resize(m,m);
 
         for (uint i=0; i<m; ++i) {
@@ -340,55 +255,100 @@ void Driver::readBasis(std::string file, uint n, bool append)
 
         assert(m == n+1);
 
-        CGaussian cg;
-        cg.A      = A;
+        CorrelatedGaussian cg;
+        cg.trans  = A;
         cg.widths = widths;
         cg.norm   = entry["norm"].asDouble();
 
-        newBasis.push_back(cg);
+        basis.push_back(cg);
     }
 
-    if (append) basis.insert(basis.end(), newBasis.begin(), newBasis.end());
-    else        basis = newBasis;
+    return basis;
 }
 
-void Driver::writeConvergenceData(std::string file)
+void Driver::write_basis(Basis& basis, std::string file)
 {
-    std::ofstream datafile;
-    datafile.open(file, std::ofstream::out);
+    PROFILE();
 
-    for (uint i=0; i<convergenceData.size(); ++i) {
-        datafile << i+basis.size()-convergenceData.size() << "\t" << convergenceData[i].real()
-                 << " " << convergenceData[i].imag() <<  "\n";
+    Json::Value root;
+
+    Json::Value metadata(Json::objectValue);
+    metadata["size"] = Json::Value::UInt(basis.size());
+    root["metadata"] = metadata;
+
+    Json::Value set(Json::arrayValue);
+    for (auto cg : basis) {
+        Json::Value entry(Json::objectValue);
+
+        Matrix<real> trans = cg.trans;
+        Json::Value A(Json::arrayValue);
+        for (int i=0; i<trans.rows(); ++i) {
+            for (int j=0; j<trans.cols(); ++j) {
+                A.append(Json::Value( trans(i,j) ));
+            }
+        }
+
+        Matrix<real> widths = cg.widths;
+        Json::Value w_matrix(Json::arrayValue);
+        for (int i=0; i<widths.rows(); ++i) {
+            for (int j=0; j<widths.cols(); ++j) {
+                w_matrix.append(Json::Value( widths(i,j) ));
+            }
+        }
+
+        entry["A"]      = A;
+        entry["widths"] = w_matrix;
+        entry["norm"]   = cg.norm;
+        entry["strain"] = cg.strain;
+
+        set.append(entry);
     }
 
-    datafile.close();
+    root["basis"] = set;
+
+    std::ofstream basis_file;
+    basis_file.open(file, std::ofstream::out);
+    basis_file << root;
+    basis_file.close();
 }
 
-void Driver::writeSweepData(std::string file)
+void Driver::write_convergence(ConvergenceData& cd, std::string file,bool append)
 {
-    std::ofstream datafile;
-    datafile.open(file, std::ofstream::out);
+    PROFILE();
 
-    for (auto& kv : sweepData) {
-        datafile << kv.first;
-        for (auto a : kv.second.eigenvalues)
-            datafile << "\t" << a.real() << " " << a.imag();
+    std::ofstream datafile;
+
+    if (append) datafile.open(file, std::ofstream::app);
+    else        datafile.open(file, std::ofstream::out);
+
+    for (uint i=0; i<cd.eigenvalues.size(); ++i) {
+        datafile << cd.offset + i;
+        for (auto ev : cd.eigenvalues[i]) {
+            datafile << "\t" << ev;
+        }
         datafile << "\n";
     }
 
     datafile.close();
 }
 
-void Driver::printEnergies(uint n)
+void Driver::write_sweep(SweepData& sd, std::string file, bool append)
 {
-    if (basisCache.eigenvalues.size() != basis.size()) {
-        basisCache = solver->solve(basis);
+    PROFILE();
+
+    std::ofstream datafile;
+
+    if (append) datafile.open(file, std::ofstream::app);
+    else        datafile.open(file, std::ofstream::out);
+
+    for (uint i=0; i<sd.steps; ++i) {
+        std::pair<real,Solution<complex>> sol = sd.sweep_vec[i];
+        datafile << sol.first << "\t";
+        for (auto ev : sol.second.eigenvalues) {
+            datafile << ev.real() << " " << ev.imag() << "\t";
+        }
+        datafile << "\n";
     }
 
-    for (uint i=0; i<basisCache.eigenvalues.size() && i<n; ++i) {
-        std::cout << "E" << i << " = ";
-        std::cout << std::setprecision(18) << basisCache.eigenvalues[i];
-        std::cout << "\n";
-    }
+    datafile.close();
 }

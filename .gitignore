@@ -30,4 +30,5 @@ res
 *.app
 
 #misc
-data/*
+out/*
+basis.json

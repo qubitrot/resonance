@@ -1,10 +1,8 @@
 #pragma once
-#ifndef SAMPLING_H
-#define SAMPLING_H
 
 #include <vector>
-#include <random>
-#include <list>
+#include <unordered_map>
+#include <memory>
 #include "typedefs.h"
 #include "system.h"
 
@@ -13,19 +11,18 @@ class SampleSpace;
 class SamplingDistribution
 {
 public:
-    SamplingDistribution(int seed, bool learn, uint hsize); //0 = seed by time
+    SamplingDistribution(int seed=-1); //seed by time if neg
     virtual ~SamplingDistribution();
 
     virtual real operator()()=0;
-    virtual void learn(real,real) {};
+
+    virtual void learn(real value, real impact) {
+        (void)value;
+        (void)impact;
+    };
 
 protected:
-    std::minstd_rand rand;
-    bool learning;
-
-    uint hist_size;
-    uint hist_index;
-    std::vector<real> history;
+    static std::minstd_rand rand;
 };
 
 class SD_Uniform : public SamplingDistribution
@@ -37,58 +34,53 @@ public:
     virtual real operator()();
 
 private:
-    real min;
-    real max;
+    real minimum;
+    real maximum;
 };
 
 class SD_Gaussian : public SamplingDistribution
 {
 public:
-    //If min=max, then then there is no min/max
-    SD_Gaussian(real avg, real std, real mn, real mx, real mstdf,
-                int seed, bool learn, uint hsize);
+    SD_Gaussian(real avg, real std, real mstdf, bool has_min, real min,
+                bool has_max, real max, bool learn, uint hist_size, int seed=-1);
     ~SD_Gaussian();
 
     virtual real operator()();
-    virtual void learn(real,real);
+    virtual void learn(real value, real impact);
 
 private:
+    std::normal_distribution<real> gaussian;
+
+    bool has_minimum;
+    bool has_maximum;
+    real minimum;
+    real maximum;
     real mean;
-    real stdev;
-    real min;
-    real max;
+    real standard_deviation;
     real min_std_fac;
+
+    bool learning;
+    uint history_size;
+    uint history_index;
+    std::vector<real> history;
 };
 
-class MatrixStrain
+class CG_Strain
 {
-friend class SampleSpace;
-
 public:
-    MatrixStrain(System*);
-    ~MatrixStrain();
+    CG_Strain();
+    ~CG_Strain();
 
-    //Computes A and norm from the widths matrix
-    static void computeCG(CGaussian*,System*);
-
-    //Generates a new CGaussian according to distributions.
-    CGaussian genMatrix();
-
-    void setDistribution(std::string& p1, std::string& p2,
-                         const std::shared_ptr<SamplingDistribution>& sd);
-
-    void learn(CGaussian&, real impact);
+    CorrelatedGaussian gen_widths(const std::vector<Particle>& particles);
+    void learn(CorrelatedGaussian& cg, real impact);
+    void set_distribution(short id1, short id2,
+                          const std::shared_ptr<SamplingDistribution> sd);
 
 private:
     std::unordered_map<
-        std::pair<std::string,std::string>,
+        std::pair<short,short>,
         std::shared_ptr<SamplingDistribution>
     > distributions;
-
-    System* system;
-    const std::vector<Particle*>& particles;
-
-    MatrixXr genWidths();
 };
 
 class SampleSpace
@@ -97,24 +89,24 @@ public:
     SampleSpace();
     ~SampleSpace();
 
-    //Generates a CGaussian, s chooses strain, s=-1 means semi-random
-    CGaussian genMatrix(int s = -1);
-    uint chooseStrain();
+    uint choose_strain();
+    CorrelatedGaussian gen_widths(const std::vector<Particle>& particles,
+                                  int strain = -1);
 
-    void learn(CGaussian&, real impact);
+    void learn(CorrelatedGaussian& cg, real impact);
 
-    void addStrain(MatrixStrain*,uint);
+    void add_strain(CG_Strain, uint freq);
 
 private:
     std::vector<
-        std::pair<MatrixStrain*,real>
+        std::pair<CG_Strain,real>
     > strains;
 
-    uint totalFreq;
-
-    std::list< std::pair<uint,real> > learnFreqList;
+    uint total_frequency;
 
     std::minstd_rand rand;
 };
 
-#endif
+
+
+

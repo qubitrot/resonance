@@ -1,68 +1,76 @@
 #pragma once
-#ifndef SOLVER_H
-#define SOLVER_H
 
-#include <tuple>
 #include "typedefs.h"
 #include "system.h"
 
-struct SolverResults
+template<typename T>
+struct Solution
 {
-    MatrixXc T;
-    MatrixXc V;
-    MatrixXr O;
-    std::vector<complex>  eigenvalues;
-    std::vector<VectorXc> eigenvectors;
+    Matrix<T>    K;
+    Matrix<T>    V;
+    Matrix<real> O;
+
+    real theta;
+
+    bool has_eigenvalues;
+    bool has_eigenvectors;
+
+    std::vector<T> eigenvalues;
+    std::vector<
+        Vector<T>
+    > eigenvectors;
 };
 
+template<typename T>
 class Solver
 {
 public:
-    Solver(System*);
+    Solver(System* context);
     virtual ~Solver();
 
-    //Compute and solve for ALL the Hamiltonian elements.
-    virtual SolverResults solve(const Basis&)=0;
-
-    //Update/add row to already computed Hamiltonian/eigenvalues
-    virtual SolverResults solveRow(const Basis&, SolverResults& cache, uint row)=0;
-
-    //Compute and solve for a complex rotation. Requires unrotated cache;
-    virtual SolverResults solveRot(const Basis&, real theta, SolverResults& unrot)=0;
-
-    //Update/add rot to already computed rotated Hamiltonian/eigenvalues;
-    virtual SolverResults solveRotRow(const Basis&, real theta, SolverResults& cache, uint row)=0;
-
-    virtual real overlap(const CGaussian&, const CGaussian&)=0;
+    virtual Solution<T> compute(Basis&, real theta=0)=0;
+    virtual Solution<T> compute(Basis&, Solution<T>& cache, real theta=0)=0;
+    virtual Solution<T> solve(Basis&, bool eigenvectors=0, real theta=0)=0;
+    virtual Solution<T> solve(Basis&, Solution<T>& cache,
+                              bool eigenvectors=0, real theta=0)=0;
+    virtual void        solve(Solution<T>&, bool eigenvectors=0)=0;
 
 protected:
-    System*  system;
+    System* system_context;
 };
 
-class CpuSolver : public Solver
+template<typename T>
+class SolverCPU : public Solver<T>
 {
 public:
-    CpuSolver(System*);
-    ~CpuSolver();
+    SolverCPU(System* context);
+    ~SolverCPU();
 
-    SolverResults solve(const Basis&);
-    SolverResults solveRow(const Basis&, SolverResults& cache, uint row);
-    SolverResults solveRot(const Basis&, real theta, SolverResults& unrot);
-    SolverResults solveRotRow(const Basis&, real theta, SolverResults& cache, uint row);
+    virtual Solution<T> compute(Basis&, real theta=0);
+    virtual Solution<T> compute(Basis&, Solution<T>& cache, real theta=0);
+    virtual Solution<T> solve(Basis&, bool eigenvectors=0, real theta=0);
+    virtual Solution<T> solve(Basis&, Solution<T>& cache,
+                              bool eigenvectors=0, real theta=0);
+    virtual void        solve(Solution<T>&, bool eigenvectors=0);
 
-    real overlap(const CGaussian&, const CGaussian&);
+protected:
+    real overlap(CorrelatedGaussian&, CorrelatedGaussian&);
+    T    kinetic(CorrelatedGaussian&, CorrelatedGaussian&, real over);
+    T    gaussian_v(real v0, real r0, real over, real cij, real theta);
+    real c_ij(CorrelatedGaussian&, CorrelatedGaussian&, uint i, uint j);
 
-private:
-    complex kinetic  (const CGaussian&, const CGaussian&, real);
-    complex gaussianV(real v0, real r0, real theta, real over, real c_ij);
+    void solve_bisection(Solution<T>&, uint max_iterations, real tolorance);
+    void solve_full(Solution<T>&, bool eigenvectors);
 
-    real genc_ij(const CGaussian& A, const CGaussian& B, uint i, uint j);
-
-    SolverResults computeHermition(MatrixXc& T, MatrixXc& V, MatrixXr& O);
-    SolverResults computeQZ(MatrixXc& T, MatrixXc& V, MatrixXr& O);
-    //SolverResults computeRF(MatrixXc& T, MatrixXc& V, MatrixXr& O, const Basis&, SolverResults& uplft);
-
-    std::tuple<Basis,std::vector<int>,uint> symmetrize(const CGaussian&);
+    void rotate_if_T_complex(T& value, real theta);
 };
 
-#endif
+template<typename T>
+Solver<T>::Solver(System* context)
+    : system_context(context)
+{}
+
+template<typename T>
+Solver<T>::~Solver()
+{}
+

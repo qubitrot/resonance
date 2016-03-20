@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- Try loading both, because it could be either -->
+<script src="jquery.js"></script>
+<script src="report.js"></script>
+<script src="Profiler/jquery.js"></script>
+<script src="Profiler/report.js"></script>
+<style>
+td             { padding: 0px 0px; border-left: solid black 1px; }
+.toggle        { text-align: center; width: 1em; }
+.toggle a      { color: black; text-decoration: none; }
+.func_name     { text-align: left; padding-left: 5px; }
+.total_count   { text-align: right; width: 2.4em; }
+.total_ns      { text-align: right; width: 5em; }
+.percent       { text-align: right; width: 4em; }
+.total_percent { text-align: right; width: 4em; }
+.header        { background-color: lightblue; text-align: right; font-weight: bold; }
+.header td     { padding: 3px 5px; }
+.sub_func      { border: solid black; border-width: 1px 0px; }
+.func          { border: solid black; border-width: 1px 0px; }
+</style>
+</head>
+<body>
+<table style="border-right: solid black 1px;" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+	<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">int main()</td><td class="total_count">1</td><td class="total_ns">1,199,359</td><td class="percent">100%</td><td class="total_percent">100%</td></tr>
+		<tr><td colspan="6" style="padding-left:1cm;">
+		<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+		<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void foo()</td><td class="total_count">200</td><td class="total_ns">793</td><td class="percent">13.2%</td><td class="total_percent">13.2%</td></tr>
+			<tr><td colspan="6" style="padding-left:1cm;">
+			<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+			<tr><td class="toggle"></td><td class="func_name">void recurse(unsigned int)</td><td class="total_count">200</td><td class="total_ns">513</td><td class="percent">64.7%</td><td class="total_percent">8.56%</td></tr>
+			<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">200</td><td class="total_ns">279</td><td class="percent">35.3%</td><td class="total_percent">4.66%</td></tr>
+		</table>
+		</td></tr>
+		<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">int complex_func(double)</td><td class="total_count">200</td><td class="total_ns">4,096</td><td class="percent">68.3%</td><td class="total_percent">68.3%</td></tr>
+			<tr><td colspan="6" style="padding-left:1cm;">
+			<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+			<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void foo()</td><td class="total_count">200</td><td class="total_ns">833</td><td class="percent">20.4%</td><td class="total_percent">13.9%</td></tr>
+				<tr><td colspan="6" style="padding-left:1cm;">
+				<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+				<tr><td class="toggle"></td><td class="func_name">void recurse(unsigned int)</td><td class="total_count">200</td><td class="total_ns">547</td><td class="percent">65.7%</td><td class="total_percent">9.13%</td></tr>
+				<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">200</td><td class="total_ns">286</td><td class="percent">34.3%</td><td class="total_percent">4.77%</td></tr>
+			</table>
+			</td></tr>
+			<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">200</td><td class="total_ns">3,262</td><td class="percent">79.6%</td><td class="total_percent">54.4%</td></tr>
+		</table>
+		</td></tr>
+		<tr><td class="toggle"></td><td class="func_name">void recurse(unsigned int)</td><td class="total_count">20</td><td class="total_ns">1,024</td><td class="percent">1.71%</td><td class="total_percent">1.71%</td></tr>
+		<tr><td class="toggle"></td><td class="func_name">void simple1()</td><td class="total_count">20</td><td class="total_ns">49</td><td class="percent">0.0823%</td><td class="total_percent">0.0823%</td></tr>
+		<tr><td class="toggle"></td><td class="func_name">void simple2()</td><td class="total_count">20</td><td class="total_ns">50</td><td class="percent">0.0844%</td><td class="total_percent">0.0844%</td></tr>
+		<tr><td class="toggle"></td><td class="func_name">float TestObject::func(std::string)</td><td class="total_count">20</td><td class="total_ns">51</td><td class="percent">0.0855%</td><td class="total_percent">0.0855%</td></tr>
+		<tr><td class="toggle"></td><td class="func_name">std::pow__main.cpp:114</td><td class="total_count">20</td><td class="total_ns">609</td><td class="percent">1.02%</td><td class="total_percent">1.02%</td></tr>
+		<tr><td class="toggle"></td><td class="func_name">test_void_noparams_external__main.cpp:115</td><td class="total_count">20</td><td class="total_ns">2,611</td><td class="percent">4.35%</td><td class="total_percent">4.35%</td></tr>
+		<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple12()</td><td class="total_count">1</td><td class="total_ns">4,872</td><td class="percent">0.406%</td><td class="total_percent">0.406%</td></tr>
+			<tr><td colspan="6" style="padding-left:1cm;">
+			<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+			<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple11()</td><td class="total_count">1</td><td class="total_ns">4,104</td><td class="percent">84.2%</td><td class="total_percent">0.342%</td></tr>
+				<tr><td colspan="6" style="padding-left:1cm;">
+				<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+				<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple10()</td><td class="total_count">1</td><td class="total_ns">3,696</td><td class="percent">90.1%</td><td class="total_percent">0.308%</td></tr>
+					<tr><td colspan="6" style="padding-left:1cm;">
+					<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+					<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple9()</td><td class="total_count">1</td><td class="total_ns">3,278</td><td class="percent">88.7%</td><td class="total_percent">0.273%</td></tr>
+						<tr><td colspan="6" style="padding-left:1cm;">
+						<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+						<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple8()</td><td class="total_count">1</td><td class="total_ns">2,822</td><td class="percent">86.1%</td><td class="total_percent">0.235%</td></tr>
+							<tr><td colspan="6" style="padding-left:1cm;">
+							<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+							<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple7()</td><td class="total_count">1</td><td class="total_ns">2,359</td><td class="percent">83.6%</td><td class="total_percent">0.197%</td></tr>
+								<tr><td colspan="6" style="padding-left:1cm;">
+								<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+								<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple6()</td><td class="total_count">1</td><td class="total_ns">1,756</td><td class="percent">74.4%</td><td class="total_percent">0.146%</td></tr>
+									<tr><td colspan="6" style="padding-left:1cm;">
+									<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+									<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple5()</td><td class="total_count">1</td><td class="total_ns">1,284</td><td class="percent">73.1%</td><td class="total_percent">0.107%</td></tr>
+										<tr><td colspan="6" style="padding-left:1cm;">
+										<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+										<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple4()</td><td class="total_count">1</td><td class="total_ns">837</td><td class="percent">65.2%</td><td class="total_percent">0.0698%</td></tr>
+											<tr><td colspan="6" style="padding-left:1cm;">
+											<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+											<tr><td class="toggle"><a href="#">+</a></td><td class="func_name">void simple3()</td><td class="total_count">1</td><td class="total_ns">431</td><td class="percent">51.5%</td><td class="total_percent">0.0359%</td></tr>
+												<tr><td colspan="6" style="padding-left:1cm;">
+												<table class="sub_func" width="100%" cellpadding="0" cellspacing="0">
+<tr class="header"><td class="toggle"></td><td class="func_name">Function</td><td class="total_count"># Calls</td><td class="total_ns">Avg Nanosec</td><td class="percent">%</td><td class="total_percent">Total %</td></tr>
+												<tr><td class="toggle"></td><td class="func_name">void simple2()</td><td class="total_count">1</td><td class="total_ns">51</td><td class="percent">11.8%</td><td class="total_percent">0.00425%</td></tr>
+												<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">380</td><td class="percent">88.2%</td><td class="total_percent">0.0317%</td></tr>
+											</table>
+											</td></tr>
+											<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">406</td><td class="percent">48.5%</td><td class="total_percent">0.0339%</td></tr>
+										</table>
+										</td></tr>
+										<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">447</td><td class="percent">34.8%</td><td class="total_percent">0.0373%</td></tr>
+									</table>
+									</td></tr>
+									<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">472</td><td class="percent">26.9%</td><td class="total_percent">0.0394%</td></tr>
+								</table>
+								</td></tr>
+								<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">603</td><td class="percent">25.6%</td><td class="total_percent">0.0503%</td></tr>
+							</table>
+							</td></tr>
+							<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">463</td><td class="percent">16.4%</td><td class="total_percent">0.0386%</td></tr>
+						</table>
+						</td></tr>
+						<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">456</td><td class="percent">13.9%</td><td class="total_percent">0.038%</td></tr>
+					</table>
+					</td></tr>
+					<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">418</td><td class="percent">11.3%</td><td class="total_percent">0.0349%</td></tr>
+				</table>
+				</td></tr>
+				<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">408</td><td class="percent">9.94%</td><td class="total_percent">0.034%</td></tr>
+			</table>
+			</td></tr>
+			<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">768</td><td class="percent">15.8%</td><td class="total_percent">0.064%</td></tr>
+		</table>
+		</td></tr>
+		<tr bgcolor="#DA9BF0"><td class="toggle"></td><td class="func_name">Unprofiled</td><td class="total_count">1</td><td class="total_ns">128,638</td><td class="percent">10.7%</td><td class="total_percent">10.7%</td></tr>
+</table>
+</body>
+</html>

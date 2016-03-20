@@ -1,52 +1,65 @@
 #pragma once
-#ifndef DRIVER_H
-#define DRIVER_H
 
-#include <map>
+#include <string>
 #include "typedefs.h"
 #include "system.h"
-#include "sampling.h"
 #include "solver.h"
+#include "solvercuda.h"
+#include "sampling.h"
+
+struct ConvergenceData {
+    uint offset;
+    std::vector<
+        std::vector<real>
+    > eigenvalues;
+};
+
+struct SweepData {
+    real start;
+    real end;
+    real steps;
+    real step_size;
+    std::vector<
+        std::pair<real,Solution<complex>> //theta, solution
+    > sweep_vec;
+};
 
 class Driver
 {
 public:
-    Driver(System*,Solver*,SampleSpace*);
+    Driver(System*,SampleSpace*);
     ~Driver();
 
-    Basis generateTrials(uint size);
-    Basis generateBasis(uint size, bool rot=false, real start=0, real end=0, uint steps=0);
+    ConvergenceData expand_basis(Basis& basis, uint size);
+    ConvergenceData expand_basis(Basis& basis, Solution<real>& cache, uint size);
 
-    void sweepAngle(real start, real end, uint steps);
-    void updateSweep(uint row);
+    SweepData sweep_basis(Basis& basis, real start, real end, uint steps);
+    SweepData sweep_basis(Basis& basis, Solution<complex>& cache,
+                          real start, real end, uint steps);
+    SweepData sweep_basis(Basis& basis, real start, real end, uint steps,
+                          std::vector<uint> sizes);
+    SweepData sweep_basis(Basis& basis, Solution<complex>& cache, real start,
+                          real end, uint steps, std::vector<uint> sizes);
 
-    void readBasis(std::string file, uint n=0, bool append=false);
-    void writeBasis(std::string file);
-    void writeConvergenceData(std::string file);
-    void writeSweepData(std::string file);
-    void printEnergies(uint n);
+    Basis generate_trials(uint n);
 
-    int  targetState;
-    real targetEnergy;
-    uint trialSize;
-    uint numThreads;
-    real singularityLimit;
-    bool forceDiversity;
+    static Basis read_basis(std::string file, uint n=0);
+    static void  write_basis(Basis& basis, std::string file);
+    static void  write_convergence(ConvergenceData& cd, std::string file,
+                                   bool append = false);
+    static void  write_sweep(SweepData& sd, std::string file,
+                             bool append = false);
+
+    uint target_state;
+    real target_energy;
+    bool targeting_energy;
+    uint trial_size;
+    real singularity_limit;
+    uint threads;
 
 private:
     System*      system;
-    Solver*      solver;
-    SampleSpace* sampleSpace;
+    SampleSpace* sample_space;
 
-    Basis         basis;
-    SolverResults basisCache;
-
-    std::vector<complex> convergenceData;
-    std::map<real,SolverResults> sweepData;
-    std::tuple<real,real,uint> sweepMetaData; //start,end,steps
-
-    static void findBestAddition(std::pair<CGaussian,complex>* out,Driver*,Basis trails,
-                                 SolverResults* bcache,uint target,real singularityLimit);
+    bool check_SVD(Matrix<real>& O);
 };
-
-#endif

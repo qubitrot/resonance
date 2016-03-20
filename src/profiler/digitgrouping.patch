@@ -1,0 +1,49 @@
+From 395c5eb5bdbd7778534981c6af6475525656c024 Mon Sep 17 00:00:00 2001
+From: Kiooeht <kiooeht@gmail.com>
+Date: Tue, 23 Jun 2015 15:43:50 -0700
+Subject: [PATCH] Digit grouping
+
+---
+ htmlwriter.h | 1 +
+ iwriter.h    | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/htmlwriter.h b/htmlwriter.h
+index 1da0274..dfccfb9 100644
+--- a/htmlwriter.h
++++ b/htmlwriter.h
+@@ -45,6 +45,7 @@ class HTMLWriter : public IWriter {
+ 			} else {
+ 				out << node->func_name;
+ 			}
++			out.imbue(std::locale(std::cout.getloc(), new IWriter::comma_out));
+ 			out << "</td><td class=\"total_count\">" << node->total_count
+ 				<< "</td><td class=\"total_ns\">" << node->avg_ns
+ 				<< "</td><td class=\"percent\">" << percent << '%'
+diff --git a/iwriter.h b/iwriter.h
+index 7d0dd36..02e7f29 100644
+--- a/iwriter.h
++++ b/iwriter.h
+@@ -4,6 +4,7 @@
+ 
+ #include <ostream>
+ #include <string>
++#include <locale>
+ #include "profiler.h"
+ 
+ class IWriter {
+@@ -16,6 +17,11 @@ class IWriter {
+ 		virtual void writeHeader(std::ostream& out) =0;
+ 		// Called after all records have been written
+ 		virtual void writeFooter(std::ostream& out) =0;
++
++		struct comma_out : std::numpunct<char> {
++			char do_thousands_sep()   const { return ',';  }
++			std::string do_grouping() const { return "\3"; }
++		};
+ };
+ 
+ #endif
+-- 
+2.1.3
+

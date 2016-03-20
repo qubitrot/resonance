@@ -1,12 +1,9 @@
 #pragma once
-#ifndef SYSTEM_H
-#define SYSTEM_H
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include "typedefs.h"
-
 
 enum ParticleType {
     PT_None,
@@ -17,61 +14,68 @@ enum ParticleType {
 struct Particle {
     Particle(ParticleType t) : type(t) {}
 
-    std::string name;
-    real mass;
     ParticleType type;
-    int identicality; //0 = unique
+    real mass;
+    std::string name;
+    short id;
+    short identicality; //negative = unique
 };
 
-struct InteractionV {
+struct Interaction {
     enum Type {
         None,
         Gaussian,
-        Harmonic
+        Harmonic,
     } type;
-    bool use = false;
-    real v0  = 1;
-    real r0  = 1;
+
+    bool on = false;
+    real v0 = 1;
+    real r0 = 1;
+};
+
+struct SymmetrizedCG
+{
+    std::vector<CorrelatedGaussian> funcs;
+    std::vector<int> signs;
 };
 
 class System
 {
-    public:
+public:
     System();
     ~System();
 
-    //must be called after adding all particles
-    //and potentials
+    //Must be called after setting up
+    //particles and potentials.
     void init();
 
-    void addParticle(Particle*);
-    const std::vector<Particle*>& getParticles();
+    void add_particle(Particle);
+    void set_interaction(short id1, short id2, Interaction);
+    void set_interaction(std::string n1, std::string n2, Interaction);
 
-    void setTrappingPotential(InteractionV);
-    const InteractionV& getTrappingPotential();
+    const std::vector<Particle>& get_particles();
+    const Interaction&           get_interaction(short id1, short id2);
 
-    void setInteractionPotential(std::string,std::string,InteractionV);
-    const InteractionV& getInteraction(std::string,std::string);
+    const Matrix<real>& get_jacobi_transformation();
+    const Matrix<real>& get_jacobi_transformation_inverse();
+    const Matrix<real>& get_lambda_matrix();
 
-    const MatrixXr& jacobiM();
-    const MatrixXr& jacobiM_inv();
-    const MatrixXr& lambdaM();
+    Vector<real> omega(uint i, uint j);
 
-    const VectorXr omega(uint,uint);
+    //Take a CG reference with widths defined
+    //and generates everything else.
+    void transform_cg(CorrelatedGaussian&);
 
-    private:
-    MatrixXr jacobiTransformMatrix;
-    MatrixXr jacobiTM_inv;
-    MatrixXr lambdaMatrix;
+    SymmetrizedCG symmetrize(CorrelatedGaussian&);
 
-    std::vector<Particle*> particles;
-
+private:
+    std::vector<Particle> particles;
     std::unordered_map<
-        std::pair<std::string,std::string>,
-        InteractionV
-    > interactionPotentials;
+        std::pair<short,short>,
+        Interaction
+    > interactions;
 
-    InteractionV trappingPotential;
+    Matrix<real> jacobi_transformation;
+    Matrix<real> jacobi_transformation_inverse;
+    Matrix<real> lambda_matrix;
 };
-
-#endif

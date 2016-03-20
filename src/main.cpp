@@ -1,50 +1,35 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
-#include "tclap/CmdLine.h"
-#include "json/json.h"
-#include "typedefs.h"
 #include "system.h"
 #include "solver.h"
-#include "driver.h"
 #include "sampling.h"
+#include "driver.h"
+#include "json/json.h"
+#include "profiler/profiler.h"
+#include "profiler/htmlwriter.h"
 
-void init(std::string, System*&, Solver*&, SampleSpace*&, Driver*&);
-bool flag_exists(char** a, char** b, std::string& flag);
+void init(std::string, System*, Driver*, SampleSpace*);
 
 int main(int argc, char* argv[])
 {
-    System*      system;
-    Solver*      solver;
-    SampleSpace* sampleSpace;
-    Driver*      driver;
+#ifndef NDEBUG
+    Profiler::setLogFile("out/preformance/report.html");
+    Profiler::setLogFormat(new HTMLWriter);
+    PROFILE();
+#endif
 
-    std::string outdir;
-    std::string configFile;
-    std::string basisFile;
+    std::string out_dir     = "";
+    std::string config_file = "";
+    std::string config_name = "";
 
-    try {
-        TCLAP::CmdLine cmd("Complex Scaling Method", ' ' ,"0.1");
-
-        TCLAP::ValueArg<std::string> config("c","config","Config file",true,"","string");
-        TCLAP::ValueArg<std::string> output("o","output","Output directory",false,"default","string");
-        TCLAP::ValueArg<std::string> basisf("b","basis","Basis file",false,"none","string");
-
-        cmd.add(config);
-        cmd.add(output);
-        cmd.add(basisf);
-
-        cmd.parse(argc,argv);
-
-        configFile = config.getValue();
-        basisFile  = basisf.getValue();
-
-        init(configFile,system,solver,sampleSpace,driver);
-
-        std::string confname;
-
-        if (output.getValue() != "default") {
-            outdir = output.getValue();
+    if (argc < 2) {
+        std::cout << "Nope.\n";
+        return 1;
+    } else {
+        config_file = argv[1];
+        if (argc > 2) {
+            out_dir = argv[2];
         } else {
             time_t t = time(0);
             struct tm* now = localtime(&t);
@@ -55,56 +40,51 @@ int main(int argc, char* argv[])
                  + std::to_string(now->tm_mday)      + std::string("-")
                  + std::to_string(now->tm_hour);
 
-            int lastdot   = configFile.find_last_of(".");
-            int lastslash = configFile.find_last_of("/");
-            confname = configFile.substr(lastslash+1,lastdot-lastslash-1);
+            int lastdot   = config_file.find_last_of(".");
+            int lastslash = config_file.find_last_of("/");
 
-            outdir = "data/" + date + "_" + confname;
+            config_name = config_file.substr(lastslash+1,lastdot-lastslash-1);
+            out_dir     = "out/" + date + "_" + config_name;
         }
-
-        std::string mkdir = std::string("mkdir -p ") + outdir;
-        std::system(mkdir.c_str());
-        std::system(("cp " + configFile + " " + outdir + "/" + confname + ".json").c_str());
-
-    } catch (TCLAP::ArgException &e) {
-        std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
 
-    int num = 1200;
+    std::string mkdir = std::string("mkdir -p ") + out_dir;
+    std::system(mkdir.c_str());
+    std::system(("cp " + config_file + " " + out_dir
+                 + "/" + config_name + ".json").c_str());
 
-    if (basisFile != "none") {
-        driver->readBasis(basisFile,num);
+    System* system            = new System();
+    SampleSpace* sample_space = new SampleSpace();
+    Driver* driver            = new Driver(system,sample_space);
+
+    std::cout << config_file << "\n";
+    init(config_file,system,driver,sample_space);
+
+    SolverCPU<real> solver(system);
+
+    Basis basis;// = driver->read_basis("basis.json",1000);
+
+    std::cout << basis.size() << "\n";
+    Solution<real> cache;// = solver.solve(basis);
+
+    for (uint i=0; i<10; ++i) {
+        auto cd = driver->expand_basis(basis,cache,10);
+        driver->write_basis(basis, out_dir + "/basis.json");
+        driver->write_convergence(cd,out_dir + "/convergence.dat",true);
     }
 
-    std::cout << "Let's go!\n";
+    /*real step_size = pi/6 / 50;
+    for (real theta=0; theta<pi/6; theta += step_size) {
+        SweepData sd = driver->sweep_basis(basis,theta,pi/6,1);
+        driver->write_sweep(sd,out_dir+"/sweep.dat",true);
+    }*/
 
-    for (int i=0; i<8000; ++i) {
-        driver->generateBasis(1);
-        driver->writeConvergenceData(outdir+"/convergence.dat");
-        driver->writeBasis(outdir+"/basis.json");
-        //driver->generateBasis(1,true,0,pi/3,100);
-        //driver->readBasis(basisFile,i);
-    }
-
-    driver->writeBasis(outdir+"/basis.json");
-    driver->sweepAngle(0,pi/8,100);
-    driver->writeSweepData(outdir+"/sweep"+std::to_string(num)+".dat");
-
-    driver->printEnergies(10);
-
-    std::cout << "Deleting Driver.\n";
-    delete driver;
-    std::cout << "Deleting Sample Space.\n";
-    delete sampleSpace;
-    std::cout << "Deleting Solver.\n";
-    delete solver;
-    std::cout << "Deleting Driver.\n";
     delete system;
-
-    return 0;
+    delete sample_space;
+    delete driver;
 }
 
-void init(std::string file, System*& system, Solver*& solver, SampleSpace*& space, Driver*& driver)
+void init(std::string file, System* system, Driver* driver, SampleSpace* sample_space)
 {
     Json::Value  root;
     Json::Reader reader;
@@ -113,94 +93,66 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
     config_doc >> root;
 
     //============ PARSE SYSTEM =============
-    system = new System();
-
     std::cout << "Parsing System.\n";
 
+    short particle_id_counter = 0;
+
     //Parse particles
-    const Json::Value Jparticles = root["particles"];
-    for (uint n = 0; n<Jparticles.size(); ++n) {
-        uint count = Jparticles[n].get("count",1).asInt();
+    const Json::Value j_particles = root["particles"];
+    for (uint n = 0; n<j_particles.size(); ++n) {
+        uint count = j_particles[n].get("count",1).asInt();
         for (uint i=0; i<count; ++i) {
             ParticleType ptype = ParticleType::PT_None;
-            if (Jparticles[n].get("type","").asString() == "boson")   ptype = ParticleType::PT_Boson;
-            if (Jparticles[n].get("type","").asString() == "fermion") ptype = ParticleType::PT_Fermion;
+            if (j_particles[n].get("type","").asString() == "boson")
+                ptype = ParticleType::PT_Boson;
+            if (j_particles[n].get("type","").asString() == "fermion")
+                ptype = ParticleType::PT_Fermion;
 
-            Particle* p = new Particle(ptype);
+            Particle p(ptype);
 
-            p->name         = Jparticles[n].get("name","").asString();
-            p->mass         = Jparticles[n].get("mass",1).asDouble();
-            p->identicality = Jparticles[n].get("identicality",-10).asInt();
-            if (p->identicality == -10) {
-                std::cout << "Particle " << p->name << " has unspecified identicality";
+            p.id           = particle_id_counter++;
+            p.name         = j_particles[n].get("name","").asString();
+            p.mass         = j_particles[n].get("mass",1).asDouble();
+            p.identicality = j_particles[n].get("identicality",-10).asInt();
+            if (p.identicality == -10) {
+                std::cout << "Particle " << p.name << " has unspecified identicality";
                 throw;
             }
 
-            system->addParticle(p);
+            system->add_particle(p);
         }
     }
 
-    //Parse trapping potential
-
     //Parse interaction potentials
-    const Json::Value Jinteractions = root["interactions"];
-    for (uint k=0; k<Jinteractions.size(); ++k) {
-        std::string p1 = Jinteractions[k]["pair"][0].asString();
-        std::string p2 = Jinteractions[k]["pair"][1].asString();
-        std::string t  = Jinteractions[k].get("type","none").asString();
+    const Json::Value j_interactions = root["interactions"];
+    for (uint k=0; k<j_interactions.size(); ++k) {
+        std::string p1 = j_interactions[k]["pair"][0].asString();
+        std::string p2 = j_interactions[k]["pair"][1].asString();
+        std::string t  = j_interactions[k].get("type","none").asString();
 
         if (t == "gaussian") {
-            InteractionV V;
-            V.type = InteractionV::Type::Gaussian;
-            V.v0   = Jinteractions[k].get("V0",1).asDouble();
-            V.r0   = Jinteractions[k].get("r0",1).asDouble();
-            system->setInteractionPotential(p1,p2,V);
+            Interaction V;
+            V.type = Interaction::Type::Gaussian;
+            V.v0   = j_interactions[k].get("V0",1).asDouble();
+            V.r0   = j_interactions[k].get("r0",1).asDouble();
+            system->set_interaction(p1,p2,V);
         }
     }
 
     system->init();
 
-    //========== PARSE SOLVER =============
-    solver = new CpuSolver(system);
-
-    std::cout << "Parsing Solver\n";
-
     //========== PARSE SAMPLE SPACE =======
-    space = new SampleSpace();
-
     std::cout << "Parsing Sample Space\n";
 
-    const Json::Value ss      = root["sampleSpace"];
-    const Json::Value dists   = ss["distributions"];
-    const Json::Value strains = ss["strains"];
-
-    std::unordered_map<std::string,std::shared_ptr<SamplingDistribution> > distributions;
-    for (uint k=0; k<dists.size(); ++k) {
-        if (dists[k].get("type","").asString() == "uniform") {
-            std::string name = dists[k].get("name","").asString();
-            double min = dists[k].get("min",0).asDouble();
-            double max = dists[k].get("max",0).asDouble();
-
-            distributions[name] = std::shared_ptr<SamplingDistribution>(new SD_Uniform(min,max,k));
-
-        } else if (dists[k].get("type","").asString() == "gaussian") {
-            std::string name = dists[k].get("name","").asString();
-            double min = dists[k].get("min",0).asDouble();
-            double max = dists[k].get("max",0).asDouble();
-            double avg = dists[k].get("mean",0).asDouble();
-            double std = dists[k].get("std",1).asDouble();
-            double msf = dists[k].get("mstdf",1).asDouble();
-            bool learn = dists[k].get("learn",0).asBool();
-            uint hsize = dists[k].get("history",100).asInt();
-
-            distributions[name] = std::shared_ptr<SamplingDistribution>(new SD_Gaussian(avg,std,min,max,msf,-1,learn,hsize));
-        }
-    }
+    const Json::Value space   = root["sampleSpace"];
+    const Json::Value dists   = space["distributions"];
+    const Json::Value strains = space["strains"];
 
     for (uint k=0; k<strains.size(); ++k) {
         uint freq = strains[k].get("frequency",10).asInt();
 
-        MatrixStrain* ms = new MatrixStrain(system);
+        CG_Strain cgs;
+        auto particles = system->get_particles();
 
         const Json::Value pairs = strains[k]["pairs"];
         for (uint l=0; l<pairs.size(); ++l) {
@@ -208,29 +160,67 @@ void init(std::string file, System*& system, Solver*& solver, SampleSpace*& spac
             std::string p2 = pairs[l]["pair"][1].asString();
             std::string d  = pairs[l].get("distribution","").asString();
 
-            std::shared_ptr<SamplingDistribution> dp;
-            if (distributions.find(d) != distributions.end()) {
-                dp = distributions[d];
-            } else {
-                std::cout << "ERROR: Distribution \"" << d << "\" was not specified.\n";
-                throw;
+            short id1 = -1;
+            short id2 = -1;
+
+            for (auto p : particles) {
+                if (p.name == p1) id1 = p.id;
+                if (p.name == p2) id2 = p.id;
             }
 
-            ms->setDistribution(p1,p2,dp);
+            if (id1 == -1) std::cout << "ERROR: No particle with name" << p1 << "\n";
+            if (id2 == -1) std::cout << "ERROR: No particle with name" << p2 << "\n";
+
+            for (uint i=0; i<dists.size(); ++i) {
+                if (dists[i].get("name","none").asString() == d) {
+                    if (dists[i].get("type","").asString() == "uniform") {
+                        double min = dists[i].get("min",0).asDouble();
+                        double max = dists[i].get("max",0).asDouble();
+
+                        cgs.set_distribution(id1,id2,
+                                             std::shared_ptr<SamplingDistribution>(
+                                                 new SD_Uniform(min,max)));
+                    }
+                    else if (dists[i].get("type","").asString() == "gaussian") {
+                        double mean  = dists[i].get("mean",0).asDouble();
+                        double std   = dists[i].get("std",0).asDouble();
+                        double mstdf = dists[i].get("mstdf",0).asDouble();
+                        double min   = dists[i].get("min",-1).asDouble();
+                        double max   = dists[i].get("max",-1).asDouble();
+                        double learn = dists[i].get("learn",0).asInt();
+                        double hist  = dists[i].get("history",0).asInt();
+
+                        bool has_min = false;
+                        bool has_max = false;
+                        if (min != -1) has_min = true;
+                        if (max != -1) has_max = true;
+
+                        cgs.set_distribution(id1,id2,
+                                             std::shared_ptr<SamplingDistribution>(
+                                                 new SD_Gaussian(mean,std,mstdf,has_min,
+                                                                 min,has_max,max,learn,
+                                                                 hist)));
+                    }
+                    else {
+                        std::cout << "ERROR: distribution type invalid for "
+                                  << dists[i].get("name","") << "\n";
+                        throw;
+                    }
+                }
+            }
         }
-        space->addStrain(ms,freq);
+
+        sample_space->add_strain(cgs,freq);
     }
 
     //========== PARSE DRIVER =============
-    driver = new Driver(system,solver,space);
-
     std::cout << "Parsing Driver\n";
 
-    const Json::Value JDriver = root["driver"];
-    driver->targetState      = JDriver.get("targetState",0).asInt();
-    driver->targetEnergy     = JDriver.get("targetEnergy",1111).asDouble();
-    driver->trialSize        = JDriver.get("trialSize",1).asInt();
-    driver->numThreads       = JDriver.get("threads",1).asInt();
-    driver->singularityLimit = JDriver.get("singularityLimit",5e-15).asDouble();
-    driver->forceDiversity   = JDriver.get("forceDiversity",0).asInt();
+    const Json::Value JDriver  = root["driver"];
+    driver->target_state       = JDriver.get("targetState",0).asInt();
+    //driver->targetEnergy     = JDriver.get("targetEnergy",1111).asDouble();
+    driver->trial_size         = JDriver.get("trialSize",1).asInt();
+    driver->threads            = JDriver.get("threads",1).asInt();
+    driver->singularity_limit  = JDriver.get("singularityLimit",1e-10).asDouble();
+    //driver->forceDiversity   = JDriver.get("forceDiversity",0).asInt();
 }
