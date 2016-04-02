@@ -1,7 +1,9 @@
 {
     "queue" : [
         //["read","basis.json",1600],
-        ["generate",1000,0],
+        ["generate",100,0],
+        ["generate",100,1],
+        ["generate",100,2],
         ["sweep",0,0.5,100]
     ],
 
@@ -35,13 +37,6 @@
             "count" : 1,
             "mass"  : 15.5,
             "identicality" : 2
-        },
-        {
-            "name"  : "boson4",
-            "type"  : "boson",
-            "count" : 1,
-            "mass"  : 15.5,
-            "identicality" : 2
         }
     ],
 
@@ -58,12 +53,6 @@
         },
         {
             "pair" : ["boson1","boson3"],
-            "type" : "gaussian",
-            "V0"   : -1491.1136947,
-            "r0"   : 0.03
-        },
-        {
-            "pair" : ["boson1","boson4"],
             "type" : "gaussian",
             "V0"   : -1491.1136947,
             "r0"   : 0.03
@@ -109,19 +98,7 @@
                         "distribution" : "order1"
                     },
                     {
-                        "pair" : [ "boson1","boson4" ],
-                        "distribution" : "order1"
-                    },
-                    {
                         "pair" : [ "boson2","boson3" ],
-                        "distribution" : "order1"
-                    },
-                    {
-                        "pair" : [ "boson2","boson4" ],
-                        "distribution" : "order1"
-                    },
-                    {
-                        "pair" : [ "boson3","boson4" ],
                         "distribution" : "order1"
                     }
                 ]
@@ -138,19 +115,7 @@
                         "distribution" : "order2"
                     },
                     {
-                        "pair" : [ "boson1","boson4" ],
-                        "distribution" : "order2"
-                    },
-                    {
                         "pair" : [ "boson2","boson3" ],
-                        "distribution" : "order1"
-                    },
-                    {
-                        "pair" : [ "boson2","boson4" ],
-                        "distribution" : "order1"
-                    },
-                    {
-                        "pair" : [ "boson3","boson4" ],
                         "distribution" : "order1"
                     }
                 ]

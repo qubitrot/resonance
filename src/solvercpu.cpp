@@ -231,6 +231,7 @@ void SolverCPU<complex>::solve_bisection(Solution<complex>& solution,
                                          uint max_iterations, real tolorance)
 {
     //This should never be called;
+    assert(false);
     (void)solution;
     (void)max_iterations;
     (void)tolorance;
@@ -342,7 +343,7 @@ void SolverCPU<real>::solve(Solution<real>& solution, bool eigenvectors)
         (uint)solution.K.rows() == solution.eigenvectors.size() +1 &&
         (uint)solution.K.rows() == solution.eigenvalues.size()  +1 )
     {
-        return solve_bisection(solution,100,0.001);
+        return solve_bisection(solution,1000000,0.0000001);
     } else {
         return solve_full(solution,eigenvectors);
     }

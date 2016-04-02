@@ -57,20 +57,52 @@ int main(int argc, char* argv[])
     SampleSpace* sample_space = new SampleSpace();
     Driver* driver            = new Driver(system,sample_space);
 
-    std::cout << config_file << "\n";
     init(config_file,system,driver,sample_space);
 
+    Json::Value  root;
+    Json::Reader reader;
+    std::ifstream config_doc(config_file, std::ifstream::binary);
+    config_doc >> root;
+    const Json::Value config_queue = root["queue"];
+
     SolverCPU<real> solver(system);
+    Basis           basis;
+    Solution<real>  cache;
 
-    Basis basis;// = driver->read_basis("basis.json",1000);
+    for (uint i=0; i<config_queue.size(); ++i) {
+        const Json::Value item = config_queue[i];
+        std::string action = item[0].asString();
 
-    std::cout << basis.size() << "\n";
-    Solution<real> cache;// = solver.solve(basis);
-
-    for (uint i=0; i<10; ++i) {
-        auto cd = driver->expand_basis(basis,cache,10);
-        driver->write_basis(basis, out_dir + "/basis.json");
-        driver->write_convergence(cd,out_dir + "/convergence.dat",true);
+        if (action == "read") {
+            std::string file = item[1].asString();
+            uint num = item[2].asInt();
+            basis    = driver->read_basis(file,num);
+            cache    = solver.solve(basis);
+        }
+        else if (action == "generate") {
+            uint num    = item[1].asInt();
+            real target = item[2].asDouble();
+            if (target < 0) {
+                driver->targeting_energy = true;
+                driver->target_energy    = target;
+            } else {
+                driver->targeting_energy = false;
+                driver->target_state     = target;
+            }
+            auto cd  = driver->expand_basis(basis,cache,num);
+            driver->write_basis(basis, out_dir + "/basis.json");
+            driver->write_convergence(cd,out_dir + "/convergence.dat",true);
+        }
+        else if (action == "sweep") {
+            real start = item[1].asDouble();
+            real end   = item[2].asDouble();
+            uint steps = item[3].asInt();
+            auto sd    = driver->sweep_basis(basis,start,end,steps);
+            driver->write_sweep(sd,out_dir+"/sweep.dat",true);
+        }
+        else {
+            std::cout << "Queue action not recognised.\n";
+        }
     }
 
     /*real step_size = pi/6 / 50;

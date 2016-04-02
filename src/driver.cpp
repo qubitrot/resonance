@@ -71,6 +71,8 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
                     trial_stack.top().second.eigenvalues[target]) {
                         trial_stack.push( std::make_pair(trial,trial_solution) );
                 }
+                //std::cout << " " << trial_solution.eigenvalues[target] << " ";
+                //std::flush(std::cout);
                 mtx.unlock();
             }
         };

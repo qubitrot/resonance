@@ -1,15 +1,15 @@
 {
     "queue" : [
         //["read","basis.json",1600],
-        ["generate",1000,0],
-        ["sweep",0,0.5,100]
+        ["generate",20,0],
+        ["generate",200,1]
     ],
 
     "driver" : {
         "targetState"  : 0,
         "threads"      : 8,
         "basisMax"     : 60,
-        "trialSize"    : 100, //per thread
+        "trialSize"    : 500, //per thread
         "singularityLimit" : 1e-24,
         "forceDiversity" : 0 
     },
@@ -19,28 +19,21 @@
             "name"  : "boson1",
             "type"  : "boson",
             "count" : 1,
-            "mass"  : 0.51666666666666666,
+            "mass"  : 1,
             "identicality" : 1
         },
         {
             "name"  : "boson2",
             "type"  : "boson",
             "count" : 1,
-            "mass"  : 15.5,
+            "mass"  : 1,
             "identicality" : 2
         },
         {
             "name"  : "boson3",
             "type"  : "boson",
             "count" : 1,
-            "mass"  : 15.5,
-            "identicality" : 2
-        },
-        {
-            "name"  : "boson4",
-            "type"  : "boson",
-            "count" : 1,
-            "mass"  : 15.5,
+            "mass"  : 1,
             "identicality" : 2
         }
     ],
@@ -63,7 +56,7 @@
             "r0"   : 0.03
         },
         {
-            "pair" : ["boson1","boson4"],
+            "pair" : ["boson2","boson3"],
             "type" : "gaussian",
             "V0"   : -1491.1136947,
             "r0"   : 0.03
@@ -79,7 +72,7 @@
                 "std"      : 1,
                 "mstdf"    : 1,
                 "min"      : 0,
-                "max"      : 2, 
+                "max"      : 4, 
                 "learn"    : 1,
                 "history"  : 50
             },
@@ -90,7 +83,7 @@
                 "std"      : 4,
                 "mstdf"    : 1,
                 "min"      : 1,
-                "max"      : 4, 
+                "max"      : 10, 
                 "learn"    : 1,
                 "history"  : 50
             }
@@ -109,19 +102,7 @@
                         "distribution" : "order1"
                     },
                     {
-                        "pair" : [ "boson1","boson4" ],
-                        "distribution" : "order1"
-                    },
-                    {
                         "pair" : [ "boson2","boson3" ],
-                        "distribution" : "order1"
-                    },
-                    {
-                        "pair" : [ "boson2","boson4" ],
-                        "distribution" : "order1"
-                    },
-                    {
-                        "pair" : [ "boson3","boson4" ],
                         "distribution" : "order1"
                     }
                 ]
@@ -138,19 +119,7 @@
                         "distribution" : "order2"
                     },
                     {
-                        "pair" : [ "boson1","boson4" ],
-                        "distribution" : "order2"
-                    },
-                    {
                         "pair" : [ "boson2","boson3" ],
-                        "distribution" : "order1"
-                    },
-                    {
-                        "pair" : [ "boson2","boson4" ],
-                        "distribution" : "order1"
-                    },
-                    {
-                        "pair" : [ "boson3","boson4" ],
                         "distribution" : "order1"
                     }
                 ]
