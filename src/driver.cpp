@@ -183,16 +183,12 @@ SweepData Driver::sweep_basis(Basis& basis, Solution<complex>& cache,
 
     SolverCPU<complex> solver(system);
 
+    std::mutex mtx;
     SweepData out;
 
     real step_size = (end-start)/steps;
 
-    for (uint i=0; i<steps; ++i) {
-        real theta = start + i*step_size;
-
-        std::cout << "theta = " << theta << " | ";
-        std::flush(std::cout);
-
+    auto sweep_thread = [&](real theta) {
         Solution<complex> sol = solver.solve(basis,cache,false,theta);
 
         sol.eigenvectors.clear();
@@ -200,9 +196,38 @@ SweepData Driver::sweep_basis(Basis& basis, Solution<complex>& cache,
         sol.V.resize(0,0);
         sol.O.resize(0,0);
 
+        mtx.lock();
         out.sweep_vec.push_back( std::make_pair(theta,sol) );
+        mtx.unlock();
 
-        std::cout << "done.\n";
+    };
+
+    if (threads == 1) {
+        for (uint i=0; i<steps; ++i) {
+            real theta = start + i*step_size;
+            std::cout << "theta = " << theta << " | ";
+            std::flush(std::cout);
+            sweep_thread(theta);
+            std::cout << "done.\n";
+        }
+    } else {
+        for (uint i=0; i<steps;) {
+            std::vector<std::thread> thread_vec;
+            std::cout << "theta = ";
+            for (uint j=0; j<threads && i<steps;) {
+                real theta = start + i*step_size;
+                thread_vec.push_back(
+                        std::thread(sweep_thread,theta)
+                );
+                std::cout << theta << ", ";
+                j++;
+                i++;
+            }
+            std::cout << "\n";
+            for (uint j=0; j<thread_vec.size(); ++j) {
+                thread_vec[j].join();
+            }
+        }
     }
 
     out.start     = start;
