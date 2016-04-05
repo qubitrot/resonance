@@ -193,11 +193,11 @@ void SolverCPU<real>::solve_bisection(Solution<real>& solution,
     for (uint k=0; k<solution.eigenvalues.size(); ++k) {
         real E_a;
         real E_b  = solution.eigenvalues[k];
-             E_b += 0.001;
+             E_b += 0.00000001;
 
         if (k>0) {
             E_a  = solution.eigenvalues[k-1];
-            E_a += 0.001;
+            E_a += 0.00000001;
         } else {
             E_a = solution.eigenvalues[k]-100;
         }
