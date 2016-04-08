@@ -107,7 +107,7 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
         }
 
         if (everything_fails_SVD) {
-            std::cout << " ALL TRIALS FAILED SVD\n";
+            std::cout << " All candidates failed SVD.\n";
             s--;
         } else {
             solver.solve(cache,true); //get eigenvectors;
@@ -146,9 +146,6 @@ bool Driver::check_SVD(Matrix<real>& O)
     }
 
     if (lowest_sv2 > singularity_limit) return true;
-
-    std::cout << "!";
-    std::flush(std::cout);
 
     return false;
 }

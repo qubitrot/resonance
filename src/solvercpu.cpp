@@ -82,6 +82,15 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
                                 V(m,n) += T( symcg.signs[k] * nperm )
                                         * gaussian_v(inter.v0,inter.r0,ol,cij,theta);
                                 break;
+                            case Interaction::MultiGaussian:
+                                cij = c_ij(funcs[k],basis[n],i,j);
+                                for (uint a=0; a<inter.mult_v0.size(); ++a) {
+                                     real v0 = inter.mult_v0[a];
+                                     real r0 = inter.mult_r0[a];
+                                     V(m,n) += T( symcg.signs[k] * nperm )
+                                        * gaussian_v(v0,r0,ol,cij,theta);
+                                }
+                                break;
                             default:
                                 break;
                         }
@@ -193,11 +202,11 @@ void SolverCPU<real>::solve_bisection(Solution<real>& solution,
     for (uint k=0; k<solution.eigenvalues.size(); ++k) {
         real E_a;
         real E_b  = solution.eigenvalues[k];
-             E_b += 0.00000001;
+             E_b += 0.000001;
 
         if (k>0) {
             E_a  = solution.eigenvalues[k-1];
-            E_a += 0.00000001;
+            E_a += 0.000001;
         } else {
             E_a = solution.eigenvalues[k]-100;
         }
@@ -343,7 +352,7 @@ void SolverCPU<real>::solve(Solution<real>& solution, bool eigenvectors)
         (uint)solution.K.rows() == solution.eigenvectors.size() +1 &&
         (uint)solution.K.rows() == solution.eigenvalues.size()  +1 )
     {
-        return solve_bisection(solution,1000000,0.0000001);
+        return solve_bisection(solution,10e6,10e-6);
     } else {
         return solve_full(solution,eigenvectors);
     }

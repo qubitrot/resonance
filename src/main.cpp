@@ -169,6 +169,22 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
             V.r0   = j_interactions[k].get("r0",1).asDouble();
             system->set_interaction(p1,p2,V);
         }
+        else if (t == "multigaussian") {
+            Interaction V;
+            V.type = Interaction::Type::MultiGaussian;
+
+            const Json::Value j_multV0 = j_interactions[k]["V0"];
+            const Json::Value j_multr0 = j_interactions[k]["r0"];
+
+            assert (j_multV0.size() == j_multr0.size());
+
+            for (uint l=0; l<j_multV0.size(); ++l) {
+                V.mult_v0.push_back( j_multV0[l].asDouble() );
+                V.mult_r0.push_back( j_multr0[l].asDouble() );
+            }
+
+            system->set_interaction(p1,p2,V);
+        }
     }
 
     system->init();

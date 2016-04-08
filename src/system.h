@@ -25,12 +25,16 @@ struct Interaction {
     enum Type {
         None,
         Gaussian,
+        MultiGaussian,
         Harmonic,
     } type;
 
-    bool on = false;
     real v0 = 1;
     real r0 = 1;
+    real w  = 1;
+
+    std::vector<real> mult_v0;
+    std::vector<real> mult_r0;
 };
 
 struct SymmetrizedCG
