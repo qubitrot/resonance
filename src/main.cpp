@@ -166,7 +166,8 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
             Interaction V;
             V.type = Interaction::Type::Gaussian;
             V.v0   = j_interactions[k].get("V0",1).asDouble();
-            V.r0   = j_interactions[k].get("r0",1).asDouble();
+            V.r0sq = j_interactions[k].get("r0",1).asDouble();
+            V.r0sq = V.r0sq * V.r0sq;
             system->set_interaction(p1,p2,V);
         }
         else if (t == "multigaussian") {
@@ -180,7 +181,8 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
 
             for (uint l=0; l<j_multV0.size(); ++l) {
                 V.mult_v0.push_back( j_multV0[l].asDouble() );
-                V.mult_r0.push_back( j_multr0[l].asDouble() );
+                V.mult_r0sq.push_back( j_multr0[l].asDouble()
+                                     * j_multr0[l].asDouble() );
             }
 
             system->set_interaction(p1,p2,V);

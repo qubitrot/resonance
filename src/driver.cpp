@@ -38,6 +38,8 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
     ConvergenceData out;
     out.offset = basis.size();
 
+    uint fail_svd_count = 0;
+
     for (uint s=0; s<size; ++s) {
         std::cout << basis.size()+1 << " | ";
         std::flush(std::cout);
@@ -52,7 +54,7 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
         if (basis.size() < target_state)
             target = basis.size();
 
-        std::cout << "target: " << target << ", ";
+        std::cout << "t: " << target << ", ";
 
         auto trial_thread = [&]() {
             Basis trials = generate_trials(trial_size);
@@ -89,14 +91,15 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
             }
         }
 
-        std::cout << trial_stack.size() << "  ";
+        std::cout << "c: " << trial_stack.size() << " ";
 
         //Make sure there is not too much linear dependance
         bool everything_fails_SVD = true;
         while (!trial_stack.empty()) {
             Solution<real> trial_solution = trial_stack.top().second;
 
-            if (check_SVD(trial_solution.O)) {
+            real lowest_ev = lowest_eigenval(trial_solution.O);
+            if (lowest_ev > singularity_limit) {
                 basis.push_back(trial_stack.top().first);
                 cache = trial_solution;
                 sample_space->learn(trial_stack.top().first,0);
@@ -107,24 +110,38 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
         }
 
         if (everything_fails_SVD) {
-            std::cout << " All candidates failed SVD.\n";
+            std::cout << " All candidates failed SVD.";
+            fail_svd_count++;
             s--;
         } else {
             solver.solve(cache,true); //get eigenvectors;
             out.eigenvalues.push_back( cache.eigenvalues );
-            std::cout << " strain: " << trial_stack.top().first.strain << " : "
-                      << std::setprecision(10) << cache.eigenvalues[target] << "\n";
+            std::cout << " s: " << trial_stack.top().first.strain << " | E = "
+                      << std::setprecision(10) << cache.eigenvalues[target];
 
             if (targeting_energy && target == target_state &&
-                cache.eigenvalues[target] < target_energy)
+                    cache.eigenvalues[target] < target_energy)
                 target_state++;
+
+            fail_svd_count = 0;
         }
+
+        if (fail_svd_count > 0) {
+            std::cout << " Stepping back...";
+            std::flush(std::cout);
+            basis.pop_back();
+            out.eigenvalues.pop_back();
+            cache = solver.solve(basis);
+            s--;
+        }
+
+        std::cout << "\n";
     }
 
     return out;
 }
 
-bool Driver::check_SVD(Matrix<real>& O)
+real Driver::lowest_eigenval(Matrix<real>& O)
 {
     PROFILE();
 
@@ -139,15 +156,13 @@ bool Driver::check_SVD(Matrix<real>& O)
 
     Eigen::SelfAdjointEigenSolver<Matrix<real>> eigen_solver(O);
 
-    real lowest_sv2 = eigen_solver.eigenvalues()(0);
+    real lowest = eigen_solver.eigenvalues()(0);
     for (uint i=0; i<eigen_solver.eigenvalues().rows(); ++i) {
-        if (eigen_solver.eigenvalues()(i) < lowest_sv2)
-            lowest_sv2 = eigen_solver.eigenvalues()(i);
+        if (eigen_solver.eigenvalues()(i) < lowest)
+            lowest = eigen_solver.eigenvalues()(i);
     }
 
-    if (lowest_sv2 > singularity_limit) return true;
-
-    return false;
+    return lowest;
 }
 
 Basis Driver::generate_trials(uint n)

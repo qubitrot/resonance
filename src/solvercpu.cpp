@@ -80,15 +80,15 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
                             case Interaction::Gaussian:
                                 cij = c_ij(funcs[k],basis[n],i,j);
                                 V(m,n) += T( symcg.signs[k] * nperm )
-                                        * gaussian_v(inter.v0,inter.r0,ol,cij,theta);
+                                        * gaussian_v(inter.v0,inter.r0sq,ol,cij,theta);
                                 break;
                             case Interaction::MultiGaussian:
                                 cij = c_ij(funcs[k],basis[n],i,j);
                                 for (uint a=0; a<inter.mult_v0.size(); ++a) {
-                                     real v0 = inter.mult_v0[a];
-                                     real r0 = inter.mult_r0[a];
+                                     real v0   = inter.mult_v0[a];
+                                     real r0sq = inter.mult_r0sq[a];
                                      V(m,n) += T( symcg.signs[k] * nperm )
-                                        * gaussian_v(v0,r0,ol,cij,theta);
+                                        * gaussian_v(v0,r0sq,ol,cij,theta);
                                 }
                                 break;
                             default:
@@ -395,7 +395,7 @@ T SolverCPU<T>::kinetic(CorrelatedGaussian& A, CorrelatedGaussian& B, real over)
 
 template<typename T>
 inline
-T SolverCPU<T>::gaussian_v(real v0, real r0, real over, real cij, real theta)
+T SolverCPU<T>::gaussian_v(real v0, real r0sq, real over, real cij, real theta)
 {
     PROFILE();
 
@@ -405,7 +405,7 @@ T SolverCPU<T>::gaussian_v(real v0, real r0, real over, real cij, real theta)
     T r = 1;
     rotate_if_T_complex(r,theta);
 
-    T a        = T( 1./2. * cij + r/(2*r0*r0) );
+    T a        = T( 1./2. * cij + r/(2*r0sq) );
     T integral = T( v0*k ) * std::pow(a,-3./2.);
 
     return std::pow(cij/(2*pi), 3./2.) * over * integral;

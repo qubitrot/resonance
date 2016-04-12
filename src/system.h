@@ -29,12 +29,12 @@ struct Interaction {
         Harmonic,
     } type;
 
-    real v0 = 1;
-    real r0 = 1;
-    real w  = 1;
+    real v0   = 1;
+    real r0sq = 1;
+    real w    = 1;
 
     std::vector<real> mult_v0;
-    std::vector<real> mult_r0;
+    std::vector<real> mult_r0sq;
 };
 
 struct SymmetrizedCG

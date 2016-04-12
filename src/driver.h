@@ -61,5 +61,5 @@ private:
     System*      system;
     SampleSpace* sample_space;
 
-    bool check_SVD(Matrix<real>& O);
+    real lowest_eigenval(Matrix<real>& O);
 };
