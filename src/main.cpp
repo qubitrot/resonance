@@ -82,6 +82,7 @@ int main(int argc, char* argv[])
         else if (action == "generate") {
             uint num    = item[1].asInt();
             real target = item[2].asDouble();
+            uint trials = item[3].asInt();
             if (target < 0) {
                 driver->targeting_energy = true;
                 driver->target_energy    = target;
@@ -89,6 +90,7 @@ int main(int argc, char* argv[])
                 driver->targeting_energy = false;
                 driver->target_state     = target;
             }
+            driver->trial_size = trials;
             auto cd  = driver->expand_basis(basis,cache,num);
             driver->write_basis(basis, out_dir + "/basis.json");
             driver->write_convergence(cd,out_dir + "/convergence.dat",true);
