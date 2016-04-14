@@ -41,9 +41,6 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
     uint fail_svd_count = 0;
 
     for (uint s=0; s<size; ++s) {
-        std::cout << basis.size()+1 << " | ";
-        std::flush(std::cout);
-
         std::mutex mtx;
         std::stack<
             std::pair<CorrelatedGaussian,
@@ -53,8 +50,6 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
         uint target = target_state;
         if (basis.size() < target_state)
             target = basis.size();
-
-        std::cout << "t: " << target << ", ";
 
         auto trial_thread = [&]() {
             Basis trials = generate_trials(trial_size);
@@ -91,53 +86,68 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
             }
         }
 
-        std::cout << "c: " << trial_stack.size() << " ";
+        uint num_candidates = trial_stack.size();
+        int  chosen_strain  = -1;
+        real lowest_ev;
 
         //Make sure there is not too much linear dependance
         bool everything_fails_SVD = true;
         while (!trial_stack.empty()) {
             Solution<real> trial_solution = trial_stack.top().second;
 
-            real lowest_ev = lowest_eigenval(trial_solution.O);
+            lowest_ev = lowest_eigenval(trial_solution.O);
             if (lowest_ev > singularity_limit) {
                 basis.push_back(trial_stack.top().first);
                 cache = trial_solution;
                 sample_space->learn(trial_stack.top().first,0);
+                chosen_strain = trial_stack.top().first.strain;
                 everything_fails_SVD = false;
                 break;
             }
             trial_stack.pop();
         }
 
-
+        std::cout << "----------------------------------------------------------------\n";
+        std::cout << "Addition of basis function #" << basis.size() << "\n\n";
+        std::cout << "      Target E:    ";
+        if (targeting_energy) std::cout << std::setw(10) << target_energy;
+        else                  std::cout << std::setw(10) << "NA";
+        std::cout << "      Trials: " << trial_size*threads
+                  << ", Candidates: " << num_candidates << "\n";
+        std::cout << "      Target St.   " << std::setw(10) << target
+                  << "      Singularity: " << lowest_ev << "\n";
 
         if (everything_fails_SVD) {
-            std::cout << " All candidates failed SVD.";
+            std::cout << "!     All candidates failed SVD.";
             fail_svd_count++;
             s--;
+
+            if (fail_svd_count > 1) {
+                std::cout << "   Stepping back...\n\n";
+                if (!basis.empty())           basis.pop_back();
+                if (!out.eigenvalues.empty()) out.eigenvalues.pop_back();
+                cache = solver.solve(basis);
+                s--;
+            } else {
+                std::cout << "\n\n";
+            }
+
         } else {
             solver.solve(cache,true); //get eigenvectors;
             out.eigenvalues.push_back( cache.eigenvalues );
-            std::cout << " s: " << trial_stack.top().first.strain << " | E = "
-                      << std::setprecision(10) << cache.eigenvalues[target];
 
             if (targeting_energy && target == target_state &&
                     cache.eigenvalues[target] < target_energy)
                 target_state++;
 
             fail_svd_count = 0;
+
+            std::cout << "      Eigenenergy: " << std::setw(10) << std::setprecision(5)
+                                               << cache.eigenvalues[target]
+                      << "      Chosen Strain: " << chosen_strain << "\n\n";
         }
 
-        if (fail_svd_count > 1) {
-            std::cout << " Stepping back...";
-            std::flush(std::cout);
-            if (!basis.empty())           basis.pop_back();
-            if (!out.eigenvalues.empty()) out.eigenvalues.pop_back();
-            cache = solver.solve(basis);
-            s--;
-        }
 
-        std::cout << "\n";
     }
 
     return out;
