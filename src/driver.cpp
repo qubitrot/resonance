@@ -109,6 +109,8 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
             trial_stack.pop();
         }
 
+
+
         if (everything_fails_SVD) {
             std::cout << " All candidates failed SVD.";
             fail_svd_count++;
@@ -126,11 +128,11 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
             fail_svd_count = 0;
         }
 
-        if (fail_svd_count > 0) {
+        if (fail_svd_count > 1) {
             std::cout << " Stepping back...";
             std::flush(std::cout);
-            basis.pop_back();
-            out.eigenvalues.pop_back();
+            if (!basis.empty())           basis.pop_back();
+            if (!out.eigenvalues.empty()) out.eigenvalues.pop_back();
             cache = solver.solve(basis);
             s--;
         }
