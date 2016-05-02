@@ -234,6 +234,8 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
                                                  new SD_Uniform(min,max)));
                     }
                     else if (dists[i].get("type","").asString() == "gaussian") {
+                        std::string name = dists[i].get("name","").asString();
+
                         double mean  = dists[i].get("mean",0).asDouble();
                         double std   = dists[i].get("std",0).asDouble();
                         double mstdf = dists[i].get("mstdf",0).asDouble();
@@ -249,7 +251,7 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
 
                         cgs.set_distribution(id1,id2,
                                              std::shared_ptr<SamplingDistribution>(
-                                                 new SD_Gaussian(mean,std,mstdf,has_min,
+                                                 new SD_Gaussian(name,mean,std,mstdf,has_min,
                                                                  min,has_max,max,learn,
                                                                  hist)));
                     }

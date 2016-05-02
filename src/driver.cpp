@@ -89,6 +89,7 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
         uint num_candidates = trial_stack.size();
         int  chosen_strain  = -1;
         real lowest_ev;
+        uint svd_rejections = 0;
 
         //Make sure there is not too much linear dependance
         bool everything_fails_SVD = true;
@@ -105,9 +106,10 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
                 break;
             }
             trial_stack.pop();
+            svd_rejections++;
         }
 
-        std::cout << "----------------------------------------------------------------\n";
+        std::cout << "------------------------------------------------------------------------\n";
         std::cout << "Addition of basis function #" << basis.size() << "\n\n";
         std::cout << "      Target E:    ";
         if (targeting_energy) std::cout << std::setw(10) << target_energy;
@@ -115,9 +117,12 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
         std::cout << "      Trials: " << trial_size*threads
                   << ", Candidates: " << num_candidates << "\n";
         std::cout << "      Target St.   " << std::setw(10) << target
-                  << "      Singularity: " << lowest_ev << "\n";
+                  << "      SVD rejections: " << svd_rejections << "\n";
+
+        for (uint i=0; i<14; ++i) std::cout << "\n";
 
         if (everything_fails_SVD) {
+            for (uint i=0; i<2; ++i) std::cout << "\x1b[A";
             std::cout << "!     All candidates failed SVD.";
             fail_svd_count++;
             s--;
@@ -142,11 +147,29 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
 
             fail_svd_count = 0;
 
-            std::cout << "      Eigenenergy: " << std::setw(10) << std::setprecision(5)
-                                               << cache.eigenvalues[target]
-                      << "      Chosen Strain: " << chosen_strain << "\n\n";
-        }
+            for (uint i=0; i<14; ++i) std::cout << "\x1b[A";
 
+            std::cout << "      Eigenenergy: " << std::setw(10) << std::setprecision(5)
+                                               << cache.eigenvalues[target] << " "
+                                               << cache.eigenvalues[0]
+                      << "      Singularity: " << lowest_ev << "\n\n";
+            real csp = 0;
+            for (auto b : basis) {
+                if (b.strain == chosen_strain)
+                    csp++;
+            }
+            csp *= 100.0/basis.size();
+
+            std::cout << "      Chose strain " << chosen_strain << ", info:        "
+                      << "Prevalence: "  << std::setw(4) << std::setprecision(3) << csp << "%\n";
+            sample_space->print_strain_info(system->get_particles(), chosen_strain);
+
+            Eigen::IOFormat CleanFmt(4,0, ", ", "\n", "        [", "]");
+
+            std::cout << "\n      Widths of new function:\n"
+                      << basis[basis.size()-1].widths.format(CleanFmt)
+                      << "\n\n";
+        }
 
     }
 

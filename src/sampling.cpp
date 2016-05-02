@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <ctime>
 #include "sampling.h"
 
@@ -32,10 +33,11 @@ real SD_Uniform::operator()()
     return out;
 }
 
-SD_Gaussian::SD_Gaussian(real avg, real std, real mstdf, bool has_min, real min,
+SD_Gaussian::SD_Gaussian(std::string nam, real avg, real std, real mstdf, bool has_min, real min,
                          bool has_max, real max, bool learn, uint hist_size, int seed)
     : SamplingDistribution(seed)
     , gaussian(avg,std)
+    , name(nam)
     , has_minimum(has_min)
     , has_maximum(has_max)
     , minimum(min)
@@ -93,6 +95,13 @@ void SD_Gaussian::learn(real value, real impact)
         standard_deviation = mean * min_std_fac;
 
     gaussian = std::normal_distribution<real>(mean,standard_deviation);
+}
+
+void SD_Gaussian::print_info()
+{
+    std::cout << std::setw(8) << name << " | "
+              << "mean: " << std::setw(7) << mean
+              << ", std: " << std::setw(7) << standard_deviation;
 }
 
 CG_Strain::CG_Strain()
@@ -200,4 +209,25 @@ void SampleSpace::add_strain(CG_Strain strain, uint freq)
 {
     total_frequency += freq;
     strains.push_back( std::make_pair(strain,freq) );
+}
+
+void SampleSpace::print_strain_info(const std::vector<Particle>& particles, int strain)
+{
+    if (strain == -1) return;
+    assert( strain < strains.size() && strain >= 0 );
+
+    CG_Strain& s = strains[strain].first;
+
+    for (auto sd : s.distributions) {
+        std::string n1 = "";
+        std::string n2 = "";
+        for (auto p : particles) {
+            if (p.id == sd.first.first)  n1 = p.name;
+            if (p.id == sd.first.second) n2 = p.name;
+        }
+        std::cout << "        [ " << n1
+                  << " - "        << n2 << " ] ";
+        sd.second->print_info();
+        std::cout << "\n";
+    }
 }

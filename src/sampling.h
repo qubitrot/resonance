@@ -21,6 +21,8 @@ public:
         (void)impact;
     };
 
+    virtual void print_info() {};
+
 protected:
     static std::minstd_rand rand;
 };
@@ -41,15 +43,18 @@ private:
 class SD_Gaussian : public SamplingDistribution
 {
 public:
-    SD_Gaussian(real avg, real std, real mstdf, bool has_min, real min,
+    SD_Gaussian(std::string name, real avg, real std, real mstdf, bool has_min, real min,
                 bool has_max, real max, bool learn, uint hist_size, int seed=-1);
     ~SD_Gaussian();
 
     virtual real operator()();
     virtual void learn(real value, real impact);
+    virtual void print_info();
 
 private:
     std::normal_distribution<real> gaussian;
+
+    std::string name;
 
     bool has_minimum;
     bool has_maximum;
@@ -67,6 +72,7 @@ private:
 
 class CG_Strain
 {
+friend class SampleSpace;
 public:
     CG_Strain();
     ~CG_Strain();
@@ -96,6 +102,8 @@ public:
     void learn(CorrelatedGaussian& cg, real impact);
 
     void add_strain(CG_Strain, uint freq);
+
+    void print_strain_info(const std::vector<Particle>& particles, int strain=-1);
 
 private:
     std::vector<

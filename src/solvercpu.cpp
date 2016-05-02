@@ -63,9 +63,12 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
             for (uint k=0; k<funcs.size(); ++k) {
                 real ol = overlap(funcs[k],basis[n]);
 
-                O(m,n) += symcg.signs[k] * nperm * ol;
-                K(m,n) += T( symcg.signs[k] * nperm ) * kinetic(funcs[k],basis[n],ol);
+                real prefac = symcg.signs[k] * nperm;
 
+                O(m,n) += prefac * ol;
+                K(m,n) += prefac * kinetic(funcs[k],basis[n],ol);
+
+                //particle interactions
                 for (uint i=0; i<N; ++i) {
                     for(uint j=0; j<i; ++j) {
                         short id1 = particles[i].id;
@@ -79,16 +82,14 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
                         switch (inter.type) {
                             case Interaction::Gaussian:
                                 cij = c_ij(funcs[k],basis[n],i,j);
-                                V(m,n) += T( symcg.signs[k] * nperm )
-                                        * gaussian_v(inter.v0,inter.r0sq,ol,cij,theta);
+                                V(m,n) += prefac * gaussian_v(inter.v0,inter.r0sq,ol,cij,theta);
                                 break;
                             case Interaction::MultiGaussian:
                                 cij = c_ij(funcs[k],basis[n],i,j);
                                 for (uint a=0; a<inter.mult_v0.size(); ++a) {
                                      real v0   = inter.mult_v0[a];
                                      real r0sq = inter.mult_r0sq[a];
-                                     V(m,n) += T( symcg.signs[k] * nperm )
-                                        * gaussian_v(v0,r0sq,ol,cij,theta);
+                                     V(m,n) += prefac * gaussian_v(v0,r0sq,ol,cij,theta);
                                 }
                                 break;
                             default:
@@ -106,7 +107,6 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
 
         }
     }
-
 
     Solution<T> solution;
     solution.K = K;
@@ -408,7 +408,9 @@ T SolverCPU<T>::gaussian_v(real v0, real r0sq, real over, real cij, real theta)
     T a        = T( 1./2. * cij + r/(2*r0sq) );
     T integral = T( v0*k ) * std::pow(a,-3./2.);
 
-    return std::pow(cij/(2*pi), 3./2.) * over * integral;
+    real x = cij/(2*pi);
+
+    return x * std::sqrt(x) * over * integral;
 }
 
 template<typename T>
@@ -417,7 +419,8 @@ real SolverCPU<T>::c_ij(CorrelatedGaussian& A, CorrelatedGaussian& B, uint i, ui
 {
     PROFILE();
 
-    Matrix<real> C = (A.trans + B.trans).inverse();
+    Matrix<real> S = A.trans + B.trans;
+    Matrix<real> C = S.llt().solve(Matrix<real>::Identity(S.rows(),S.cols()));
     Vector<real> w = this->system_context->omega(i,j);
 
     real a = (w.transpose() * C * w);
