@@ -26,15 +26,18 @@ struct Interaction {
         None,
         Gaussian,
         MultiGaussian,
-        Harmonic,
+        PowerLaw,
+        MultiPower
     } type;
 
     real v0   = 1;
+    real pow  = 1;
     real r0sq = 1;
     real w    = 1;
 
     std::vector<real> mult_v0;
     std::vector<real> mult_r0sq;
+    std::vector<real> mult_pow;
 };
 
 struct SymmetrizedCG

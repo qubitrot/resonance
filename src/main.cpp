@@ -127,7 +127,7 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
     config_doc >> root;
 
     //============ PARSE SYSTEM =============
-    std::cout << "Parsing System.\n";
+    std::cout << "Parsing System."; std::flush(std::cout);
 
     short particle_id_counter = 0;
 
@@ -156,6 +156,8 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
             system->add_particle(p);
         }
     }
+
+    std::cout << "."; std::flush(std::cout);
 
     //Parse interaction potentials
     const Json::Value j_interactions = root["interactions"];
@@ -189,12 +191,40 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
 
             system->set_interaction(p1,p2,V);
         }
+        else if (t == "powerlaw") {
+            Interaction V;
+            V.type = Interaction::Type::PowerLaw;
+            V.v0   = j_interactions[k].get("V0",1).asDouble();
+            V.pow = j_interactions[k].get("pow",1).asDouble();
+            system->set_interaction(p1,p2,V);
+        }
+        else if (t == "multipower") {
+            Interaction V;
+            V.type = Interaction::Type::MultiPower;
+
+            const Json::Value j_multV0  = j_interactions[k]["V0"];
+            const Json::Value j_multpow = j_interactions[k]["pow"];
+
+            assert (j_multV0.size() == j_multpow.size());
+
+            for (uint l=0; l<j_multV0.size(); ++l) {
+                V.mult_v0.push_back(  j_multV0[l].asDouble() );
+                V.mult_pow.push_back( j_multpow[l].asDouble()
+                                    * j_multpow[l].asDouble() );
+            }
+
+            system->set_interaction(p1,p2,V);
+        }
     }
+
+    std::cout << "."; std::flush(std::cout);
 
     system->init();
 
+    std::cout << ".\n";
+
     //========== PARSE SAMPLE SPACE =======
-    std::cout << "Parsing Sample Space\n";
+    std::cout << "Parsing Sample Space.\n";
 
     const Json::Value space   = root["sampleSpace"];
     const Json::Value dists   = space["distributions"];
@@ -268,7 +298,7 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
     }
 
     //========== PARSE DRIVER =============
-    std::cout << "Parsing Driver\n";
+    std::cout << "Parsing Driver.\n";
 
     const Json::Value JDriver  = root["driver"];
     driver->target_state       = JDriver.get("targetState",0).asInt();

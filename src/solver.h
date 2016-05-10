@@ -57,6 +57,7 @@ protected:
     real overlap(CorrelatedGaussian&, CorrelatedGaussian&);
     T    kinetic(CorrelatedGaussian&, CorrelatedGaussian&, real over);
     T    gaussian_v(real v0, real r0sq, real over, real cij, real theta);
+    T    powerlaw_v(real v0, real pow,  real over, real cig, real theta);
     real c_ij(CorrelatedGaussian&, CorrelatedGaussian&, uint i, uint j);
 
     void solve_bisection(Solution<T>&, uint max_iterations, real tolorance);

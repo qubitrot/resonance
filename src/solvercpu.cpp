@@ -1,4 +1,5 @@
 #include <set>
+#include <cmath>
 #include "solver.h"
 #include "profiler/profiler.h"
 
@@ -90,6 +91,18 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
                                      real v0   = inter.mult_v0[a];
                                      real r0sq = inter.mult_r0sq[a];
                                      V(m,n) += prefac * gaussian_v(v0,r0sq,ol,cij,theta);
+                                }
+                                break;
+                            case Interaction::PowerLaw:
+                                cij = c_ij(funcs[k],basis[n],i,j);
+                                V(m,n) += prefac * powerlaw_v(inter.v0,inter.pow,ol,cij,theta);
+                                break;
+                            case Interaction::MultiPower:
+                                cij = c_ij(funcs[k],basis[n],i,j);
+                                for (uint a=0; a<inter.mult_v0.size(); ++a) {
+                                     real v0   = inter.mult_v0[a];
+                                     real pow  = inter.mult_pow[a];
+                                     V(m,n) += prefac * powerlaw_v(v0,pow,ol,cij,theta);
                                 }
                                 break;
                             default:
@@ -348,6 +361,9 @@ void SolverCPU<real>::solve(Solution<real>& solution, bool eigenvectors)
 {
     PROFILE();
 
+    //testing
+    return solve_full(solution,eigenvectors);
+
     if (!eigenvectors && solution.eigenvectors.size() > 0 &&
         (uint)solution.K.rows() == solution.eigenvectors.size() +1 &&
         (uint)solution.K.rows() == solution.eigenvalues.size()  +1 )
@@ -411,6 +427,19 @@ T SolverCPU<T>::gaussian_v(real v0, real r0sq, real over, real cij, real theta)
     real x = cij/(2*pi);
 
     return x * std::sqrt(x) * over * integral;
+}
+
+template<typename T>
+inline
+T SolverCPU<T>::powerlaw_v(real v0, real pow, real over, real cij, real theta)
+{
+    PROFILE();
+
+    (void)theta;
+
+    T integral = 2*pi * v0 * std::pow(2./cij, (pow+3.)/2.) * std::tgamma(pow/2. + 3./2.);
+
+    return std::pow(cij/(2*pi), 3./2.) * over * integral;
 }
 
 template<typename T>

@@ -150,8 +150,7 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
             for (uint i=0; i<14; ++i) std::cout << "\x1b[A";
 
             std::cout << "      Eigenenergy: " << std::setw(10) << std::setprecision(5)
-                                               << cache.eigenvalues[target] << " "
-                                               << cache.eigenvalues[0]
+                                               << cache.eigenvalues[target]
                       << "      Singularity: " << lowest_ev << "\n\n";
             real csp = 0;
             for (auto b : basis) {
