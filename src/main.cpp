@@ -91,9 +91,16 @@ int main(int argc, char* argv[])
                 driver->target_state     = target;
             }
             driver->trial_size = trials;
-            auto cd  = driver->expand_basis(basis,cache,num);
-            driver->write_basis(basis, out_dir + "/basis.json");
-            driver->write_convergence(cd,out_dir + "/convergence.dat",true);
+
+            uint rep = 1;
+            if (item.size() >= 5 && item[4].asInt() >= 1)
+                rep = item[4].asInt();
+
+            for (uint j=0; j<rep; ++j) {
+                auto cd  = driver->expand_basis(basis,cache,num);
+                driver->write_basis(basis, out_dir + "/basis.json");
+                driver->write_convergence(cd,out_dir + "/convergence.dat",true);
+            }
         }
         else if (action == "sweep") {
             real start = item[1].asDouble();
