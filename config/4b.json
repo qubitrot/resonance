@@ -1,27 +1,10 @@
 {
     "queue" : [
-        //["read","basis.json",1600],
-        ["generate",100,0],
-        ["generate",100,1],
-        ["generate",100,2],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["generate",200,-10],
-        ["sweep",0,0.5,100]
+        ["generate",10,0,100000,5]
     ],
 
     "driver" : {
-        "targetState"  : 0,
-        "threads"      : 8,
-        "basisMax"     : 60,
-        "trialSize"    : 50, //per thread
+        "threads"      : 4,
         "singularityLimit" : 1e-24,
         "forceDiversity" : 0 
     },
@@ -39,21 +22,21 @@
             "type"  : "boson",
             "count" : 1,
             "mass"  : 1,
-            "identicality" : 2
+            "identicality" : 1 
         },
         {
             "name"  : "boson3",
             "type"  : "boson",
             "count" : 1,
             "mass"  : 1,
-            "identicality" : 2
+            "identicality" : 1
         },
         {
             "name"  : "boson4",
             "type"  : "boson",
             "count" : 1,
             "mass"  : 1,
-            "identicality" : 2
+            "identicality" : 1
         }
     ],
 
@@ -128,7 +111,7 @@
 
         "strains" : [
             {
-                "frequency" : 10, 
+                "frequency" : 90, 
                 "pairs" : [
                     {
                         "pair" : [ "boson1","boson2" ],
