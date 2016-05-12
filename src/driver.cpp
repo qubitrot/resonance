@@ -284,6 +284,15 @@ SweepData Driver::sweep_basis(Basis& basis, Solution<complex>& cache,
     return out;
 }
 
+PairDistribution Driver::pair_distribution(Basis& basis, Solution<real>& sol, uint i, uint j,
+                                           real start, real num_boxes)
+{
+    real r = 1;
+
+    for (uint m=0; m<basis.size(); ++m) {
+    }
+}
+
 Basis Driver::read_basis(std::string file, uint n)
 {
     PROFILE();

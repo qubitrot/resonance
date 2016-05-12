@@ -24,6 +24,13 @@ struct SweepData {
     > sweep_vec;
 };
 
+struct PairDistribution {
+    real num_boxes;
+    real step_size;
+    real start;
+    std::vector<real> values;
+};
+
 class Driver
 {
 public:
@@ -40,6 +47,9 @@ public:
                           std::vector<uint> sizes);
     SweepData sweep_basis(Basis& basis, Solution<complex>& cache, real start,
                           real end, uint steps, std::vector<uint> sizes);
+
+    PairDistribution pair_distribution(Basis& basis, Solution<real>& sol, uint i, uint j,
+                                       real start, real num_boxes);
 
     Basis generate_trials(uint n);
 

@@ -1,4 +1,5 @@
 #include <set>
+#include <numeric>
 #include "system.h"
 #include "profiler/profiler.h"
 

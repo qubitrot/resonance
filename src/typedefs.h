@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <complex>
 #include <eigen3/Eigen/Dense>
 
@@ -20,7 +21,7 @@ typedef struct {
     Matrix<real> widths;
     Matrix<real> trans;
     real         norm;
-    int         strain;
+    int          strain;
 } CorrelatedGaussian;
 
 typedef std::vector<CorrelatedGaussian> Basis;

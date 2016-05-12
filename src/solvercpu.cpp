@@ -362,7 +362,7 @@ void SolverCPU<real>::solve(Solution<real>& solution, bool eigenvectors)
     PROFILE();
 
     //testing
-    return solve_full(solution,eigenvectors);
+    //return solve_full(solution,eigenvectors);
 
     if (!eigenvectors && solution.eigenvectors.size() > 0 &&
         (uint)solution.K.rows() == solution.eigenvectors.size() +1 &&
