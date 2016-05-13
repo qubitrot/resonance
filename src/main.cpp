@@ -109,6 +109,17 @@ int main(int argc, char* argv[])
             auto sd    = driver->sweep_basis(basis,start,end,steps);
             driver->write_sweep(sd,out_dir+"/sweep.dat",true);
         }
+        else if (action == "pair_distribution") {
+            Solution<real> sol = solver.solve(basis,1,0);
+            uint i = item[1].asInt();
+            uint j = item[2].asInt();
+            uint t = item[3].asInt();
+            real s = item[4].asDouble();
+            uint b = item[5].asInt();
+            real p = item[6].asDouble();
+            auto pd = driver->pair_distribution(basis,sol,i,j,t,s,b,p);
+            driver->write_pair_distribution(pd,out_dir+"/pair_distribution.dat",false);
+        }
         else {
             std::cout << "Queue action not recognised.\n";
         }

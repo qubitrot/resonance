@@ -284,13 +284,93 @@ SweepData Driver::sweep_basis(Basis& basis, Solution<complex>& cache,
     return out;
 }
 
-PairDistribution Driver::pair_distribution(Basis& basis, Solution<real>& sol, uint i, uint j,
-                                           real start, real num_boxes)
+PairDistribution Driver::pair_distribution(Basis& basis, Solution<real>& sol,
+                                           uint i, uint j, uint target,
+                                           real start, uint num_boxes, real step_size)
 {
-    real r = 1;
+    PROFILE();
 
-    for (uint m=0; m<basis.size(); ++m) {
+    uint N = system->get_particles().size();
+
+    PairDistribution out;
+    out.num_boxes = num_boxes;
+    out.step_size = step_size;
+    out.start     = start;
+
+    real r = start;
+
+    Vector<real>& eigenvector = sol.eigenvectors[target];
+
+    real r_max = step_size * num_boxes + start;
+    for (; r<r_max; r+=step_size) {
+
+        real bin = 0;
+
+        for (uint m=0; m<basis.size(); ++m) {
+
+            SymmetrizedCG A = system->symmetrize(basis[m]);
+
+            for (uint n=0; n<basis.size(); ++n) {
+
+                SymmetrizedCG B = system->symmetrize(basis[n]);
+
+                real c_mn = eigenvector[m]*eigenvector[n];
+                real term = 0;
+
+                for (uint k=0; k<A.funcs.size(); ++k) {
+                    for (uint l=0; l<B.funcs.size(); ++l) {
+                        /*real c = A.funcs[k].widths(i,j)*A.funcs[k].widths(i,j)
+                               + B.funcs[l].widths(i,j)*B.funcs[l].widths(i,j);
+
+                        real integral = 1;
+                        for (uint x=0; x<A.funcs[k].widths.rows(); ++x) {
+                            for (uint y=x+1; y<A.funcs[l].widths.cols(); ++y) {
+                               if (x != i && y != j) {
+                                    integral *= A.funcs[k].widths(x,y);
+                                    integral *= B.funcs[l].widths(x,y);
+                               }
+                            }
+                        }
+
+                        term  += std::exp(-r*r/c) * A.signs[k] * B.signs[l] * integral;*/
+
+                        Matrix<real> C     = A.funcs[k].trans + B.funcs[l].trans;
+                        Matrix<real> C_inv = C.inverse();
+                        Vector<real> w     = system->omega(i,j);
+
+                        real M0 = std::pow( std::pow(2*pi,N) / C.determinant(), 3./2.);
+                        real d  = 2 * w.transpose()*(C_inv*w);
+
+                        term += std::pow(pi*d,-3./2.) * std::exp(-r*r/d) * M0;
+
+                    }
+                }
+
+                bin += c_mn * term;
+            }
+        }
+        std::cout << r << "\t" << bin << "\n";
+        out.bins.push_back(bin);
     }
+
+    return out;
+}
+
+void Driver::write_pair_distribution(PairDistribution& pd, std::string file, bool append)
+{
+    PROFILE();
+
+    std::ofstream datafile;
+
+    if (append) datafile.open(file, std::ofstream::app);
+    else        datafile.open(file, std::ofstream::out);
+
+    for (uint i=0; i<pd.num_boxes; ++i) {
+        real r = pd.step_size*i + pd.start;
+        datafile << r << "\t" << pd.bins[i] << "\n";
+    }
+
+    datafile.close();
 }
 
 Basis Driver::read_basis(std::string file, uint n)

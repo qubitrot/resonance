@@ -28,7 +28,7 @@ struct PairDistribution {
     real num_boxes;
     real step_size;
     real start;
-    std::vector<real> values;
+    std::vector<real> bins;
 };
 
 class Driver
@@ -48,8 +48,9 @@ public:
     SweepData sweep_basis(Basis& basis, Solution<complex>& cache, real start,
                           real end, uint steps, std::vector<uint> sizes);
 
-    PairDistribution pair_distribution(Basis& basis, Solution<real>& sol, uint i, uint j,
-                                       real start, real num_boxes);
+    PairDistribution pair_distribution(Basis& basis, Solution<real>& sol,
+                                       uint i, uint j, uint target,
+                                       real start, uint num_boxes, real step_size);
 
     Basis generate_trials(uint n);
 
@@ -60,6 +61,8 @@ public:
     static void  write_sweep(SweepData& sd, std::string file,
                              bool append = false);
 
+    static void  write_pair_distribution(PairDistribution& pd, std::string file,
+                                         bool append = false);
     uint target_state;
     real target_energy;
     bool targeting_energy;
