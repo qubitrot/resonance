@@ -23,8 +23,11 @@ public:
 
     virtual void print_info() {};
 
+    std::string name;
+
 protected:
     static std::minstd_rand rand;
+
 };
 
 class SD_Uniform : public SamplingDistribution
@@ -54,7 +57,6 @@ public:
 private:
     std::normal_distribution<real> gaussian;
 
-    std::string name;
 
     bool has_minimum;
     bool has_maximum;

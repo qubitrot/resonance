@@ -21,6 +21,15 @@ struct Particle {
     short identicality; //negative = unique
 };
 
+struct Trap {
+    enum Type {
+        None,
+        Harmonic
+    } type;
+
+    real w = 1;
+};
+
 struct Interaction {
     enum Type {
         None,
@@ -59,9 +68,11 @@ public:
     void add_particle(Particle);
     void set_interaction(short id1, short id2, Interaction);
     void set_interaction(std::string n1, std::string n2, Interaction);
+    void set_trapping_potential(Trap);
 
     const std::vector<Particle>& get_particles();
     const Interaction&           get_interaction(short id1, short id2);
+    const Trap&                  get_trapping_potential();
 
     const Matrix<real>& get_jacobi_transformation();
     const Matrix<real>& get_jacobi_transformation_inverse();
@@ -81,6 +92,8 @@ private:
         std::pair<short,short>,
         Interaction
     > interactions;
+
+    Trap trapping_potential;
 
     Matrix<real> jacobi_transformation;
     Matrix<real> jacobi_transformation_inverse;

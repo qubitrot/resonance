@@ -165,8 +165,8 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
 
             Eigen::IOFormat CleanFmt(4,0, ", ", "\n", "        [", "]");
 
-            std::cout << "\n      Widths of new function:\n"
-                      << basis[basis.size()-1].widths.format(CleanFmt)
+            std::cout << "\n      A of new function:\n"
+                      << basis[basis.size()-1].trans.format(CleanFmt)
                       << "\n\n";
         }
 
@@ -319,37 +319,21 @@ PairDistribution Driver::pair_distribution(Basis& basis, Solution<real>& sol,
 
                 for (uint k=0; k<A.funcs.size(); ++k) {
                     for (uint l=0; l<B.funcs.size(); ++l) {
-                        /*real c = A.funcs[k].widths(i,j)*A.funcs[k].widths(i,j)
-                               + B.funcs[l].widths(i,j)*B.funcs[l].widths(i,j);
-
-                        real integral = 1;
-                        for (uint x=0; x<A.funcs[k].widths.rows(); ++x) {
-                            for (uint y=x+1; y<A.funcs[l].widths.cols(); ++y) {
-                               if (x != i && y != j) {
-                                    integral *= A.funcs[k].widths(x,y);
-                                    integral *= B.funcs[l].widths(x,y);
-                               }
-                            }
-                        }
-
-                        term  += std::exp(-r*r/c) * A.signs[k] * B.signs[l] * integral;*/
-
                         Matrix<real> C     = A.funcs[k].trans + B.funcs[l].trans;
                         Matrix<real> C_inv = C.inverse();
                         Vector<real> w     = system->omega(i,j);
 
-                        real M0 = std::pow( std::pow(2*pi,N) / C.determinant(), 3./2.);
+                        real M0 = std::pow( std::pow(2*pi,N-1) / C.determinant(), 3./2.);
                         real d  = 2 * w.transpose()*(C_inv*w);
 
-                        term += std::pow(pi*d,-3./2.) * std::exp(-r*r/d) * M0;
-
+                        term += 4*pi * r*r * std::pow(pi*d,-3./2.) * std::exp(-r*r/d);// * M0
+                              //* A.funcs[k].norm * B.funcs[l].norm;
                     }
                 }
 
                 bin += c_mn * term;
             }
         }
-        std::cout << r << "\t" << bin << "\n";
         out.bins.push_back(bin);
     }
 

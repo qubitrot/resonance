@@ -78,6 +78,11 @@ void System::set_interaction(std::string n1, std::string n2, Interaction v)
     set_interaction(id1,id2,v);
 }
 
+void System::set_trapping_potential(Trap t)
+{
+    trapping_potential = t;
+}
+
 const std::vector<Particle>& System::get_particles()
 {
     return particles;
@@ -86,6 +91,11 @@ const std::vector<Particle>& System::get_particles()
 const Interaction& System::get_interaction(short id1, short id2)
 {
     return interactions[std::make_pair(id1,id2)];
+}
+
+const Trap& System::get_trapping_potential()
+{
+    return trapping_potential;
 }
 
 const Matrix<real>& System::get_jacobi_transformation()
@@ -140,7 +150,7 @@ void System::transform_cg(CorrelatedGaussian& cg)
         }
     }
 
-    cg.norm = std::pow( std::pow(2*pi,N-1)/(2*cg.trans).determinant(), -3./4.);
+    cg.norm = 1/std::sqrt( std::pow( std::pow(2*pi,N-1)/(2*cg.trans).determinant(), 3./2.) );
 }
 
 SymmetrizedCG System::symmetrize(CorrelatedGaussian& A)

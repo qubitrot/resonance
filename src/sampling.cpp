@@ -37,7 +37,6 @@ SD_Gaussian::SD_Gaussian(std::string nam, real avg, real std, real mstdf, bool h
                          bool has_max, real max, bool learn, uint hist_size, int seed)
     : SamplingDistribution(seed)
     , gaussian(avg,std)
-    , name(nam)
     , has_minimum(has_min)
     , has_maximum(has_max)
     , minimum(min)
@@ -54,6 +53,8 @@ SD_Gaussian::SD_Gaussian(std::string nam, real avg, real std, real mstdf, bool h
     for (uint i=0; i<hist_size; ++i) {
         history[i] = (*this)();
     }
+
+    name = nam;
 }
 
 SD_Gaussian::~SD_Gaussian()
