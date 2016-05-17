@@ -1,10 +1,11 @@
 {
     "queue" : [
-        ["generate",10,0,100000,5]
+        ["generate",5,1,10000,1],
+        ["pair_distribution",0,1,0,0,10000,0.0001]
     ],
 
     "driver" : {
-        "threads"      : 4,
+        "threads"      : 1,
         "singularityLimit" : 1e-24,
         "forceDiversity" : 0 
     },
@@ -22,7 +23,7 @@
             "type"  : "boson",
             "count" : 1,
             "mass"  : 1,
-            "identicality" : 1 
+            "identicality" : 1
         },
         {
             "name"  : "boson3",
