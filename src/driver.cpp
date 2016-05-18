@@ -119,10 +119,7 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
         std::cout << "      Target St.   " << std::setw(10) << target
                   << "      SVD rejections: " << svd_rejections << "\n";
 
-        for (uint i=0; i<14; ++i) std::cout << "\n";
-
         if (everything_fails_SVD) {
-            for (uint i=0; i<2; ++i) std::cout << "\x1b[A";
             std::cout << "!     All candidates failed SVD.";
             fail_svd_count++;
             s--;
@@ -146,8 +143,6 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
                 target_state++;
 
             fail_svd_count = 0;
-
-            for (uint i=0; i<14; ++i) std::cout << "\x1b[A";
 
             std::cout << "      Eigenenergy: " << std::setw(10) << std::setprecision(5)
                                                << cache.eigenvalues[target]
@@ -326,7 +321,8 @@ PairDistribution Driver::pair_distribution(Basis& basis, Solution<real>& sol,
                         real M0 = std::pow( std::pow(2*pi,N-1) / C.determinant(), 3./2.);
                         real d  = 2 * w.transpose()*(C_inv*w);
 
-                        term += 4*pi * r*r * std::pow(pi*d,-3./2.) * std::exp(-r*r/d);// * M0
+                        term += 4*pi * r*r * std::pow(pi*d,-3./2.) * std::exp(-r*r/d)
+                              * A.signs[k] * A.signs[l];// * M0
                               //* A.funcs[k].norm * B.funcs[l].norm;
                     }
                 }
@@ -336,6 +332,12 @@ PairDistribution Driver::pair_distribution(Basis& basis, Solution<real>& sol,
         }
         out.bins.push_back(bin);
     }
+
+    real acc = 0;
+    for (auto a : out.bins) {
+        acc += a * step_size;
+    }
+    std::cout << " acc " << acc << "\n";
 
     return out;
 }
