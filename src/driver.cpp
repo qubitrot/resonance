@@ -160,8 +160,8 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
 
             Eigen::IOFormat CleanFmt(4,0, ", ", "\n", "        [", "]");
 
-            std::cout << "\n      A of new function:\n"
-                      << basis[basis.size()-1].trans.format(CleanFmt)
+            std::cout << "\n      Widths of new function:\n"
+                      << basis[basis.size()-1].widths.format(CleanFmt)
                       << "\n\n";
         }
 
@@ -322,8 +322,8 @@ PairDistribution Driver::pair_distribution(Basis& basis, Solution<real>& sol,
                         real d  = 2 * w.transpose()*(C_inv*w);
 
                         term += 4*pi * r*r * std::pow(pi*d,-3./2.) * std::exp(-r*r/d)
-                              * A.signs[k] * A.signs[l];// * M0
-                              //* A.funcs[k].norm * B.funcs[l].norm;
+                              * A.signs[k] * A.signs[l] * M0
+                              * A.funcs[k].norm * B.funcs[l].norm;
                     }
                 }
 
