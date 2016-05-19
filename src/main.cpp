@@ -177,6 +177,20 @@ void init(std::string file, System* system, Driver* driver, SampleSpace* sample_
 
     std::cout << "."; std::flush(std::cout);
 
+    //Parse trapping potential
+    const Json::Value j_trap = root["trap"];
+    Trap trap;
+
+    if (j_trap.get("type","none").asString() == "harmonic") {
+        trap.type = Trap::Type::Harmonic;
+    } else {
+        trap.type = Trap::Type::None;
+    }
+
+    trap.w = j_trap.get("w",1).asDouble();
+
+    system->set_trapping_potential(trap);
+
     //Parse interaction potentials
     const Json::Value j_interactions = root["interactions"];
     for (uint k=0; k<j_interactions.size(); ++k) {

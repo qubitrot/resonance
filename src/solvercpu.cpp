@@ -54,7 +54,7 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
 
         SymmetrizedCG symcg = this->system_context->symmetrize(basis[m]);
         auto funcs   = symcg.funcs;
-        uint nperm   = funcs.size();
+        int  nperm   = funcs.size();
 
         for (uint n=0; n<=m; ++n) {
             K(m,n) = 0;
@@ -78,15 +78,21 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
                         const Interaction& inter =
                             this->system_context->get_interaction(id1,id2);
 
-                        real cij;
+                        real cij = c_ij(funcs[k],basis[n],i,j);
+
+                        Trap trap = this->system_context->get_trapping_potential();
+                        if (trap.type == Trap::Type::Harmonic) {
+                            real total_mass = 0;
+                            for (auto p : particles) total_mass += p.mass;
+                            real reduced_mass = (particles[i].mass*particles[j].mass)/total_mass;
+                            V(m,n) += prefac * reduced_mass * harmonic_v(trap.w,ol,cij,theta);
+                        }
 
                         switch (inter.type) {
                             case Interaction::Gaussian:
-                                cij = c_ij(funcs[k],basis[n],i,j);
                                 V(m,n) += prefac * gaussian_v(inter.v0,inter.r0sq,ol,cij,theta);
                                 break;
                             case Interaction::MultiGaussian:
-                                cij = c_ij(funcs[k],basis[n],i,j);
                                 for (uint a=0; a<inter.mult_v0.size(); ++a) {
                                      real v0   = inter.mult_v0[a];
                                      real r0sq = inter.mult_r0sq[a];
@@ -94,11 +100,9 @@ Solution<T> SolverCPU<T>::compute(Basis& basis, Solution<T>& cache, real theta)
                                 }
                                 break;
                             case Interaction::PowerLaw:
-                                cij = c_ij(funcs[k],basis[n],i,j);
                                 V(m,n) += prefac * powerlaw_v(inter.v0,inter.pow,ol,cij,theta);
                                 break;
                             case Interaction::MultiPower:
-                                cij = c_ij(funcs[k],basis[n],i,j);
                                 for (uint a=0; a<inter.mult_v0.size(); ++a) {
                                      real v0   = inter.mult_v0[a];
                                      real pow  = inter.mult_pow[a];
@@ -438,6 +442,19 @@ T SolverCPU<T>::powerlaw_v(real v0, real pow, real over, real cij, real theta)
     (void)theta;
 
     T integral = 2*pi * v0 * std::pow(2./cij, (pow+3.)/2.) * std::tgamma(pow/2. + 3./2.);
+
+    return std::pow(cij/(2*pi), 3./2.) * over * integral;
+}
+
+template<typename T>
+inline
+T SolverCPU<T>::harmonic_v(real w, real over, real cij, real theta)
+{
+    PROFILE();
+
+    (void)theta;
+
+    T integral = pi * w*w * std::pow(2./cij, 5./2.) * std::tgamma(5./2.);
 
     return std::pow(cij/(2*pi), 3./2.) * over * integral;
 }
