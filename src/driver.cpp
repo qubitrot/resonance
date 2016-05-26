@@ -4,6 +4,7 @@
 #include <random>
 #include <stack>
 #include <thread>
+#include <ctime>
 #include <mutex>
 #include "driver.h"
 #include "json/json.h"
@@ -110,7 +111,20 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
         }
 
         std::cout << "------------------------------------------------------------------------\n";
-        std::cout << "Addition of basis function #" << basis.size() << "\n\n";
+        std::cout << "Addition of basis function #" << basis.size();
+
+        time_t t = time(0);
+        struct tm* now = localtime(&t);
+
+        std::string date;
+        date = std::to_string(now->tm_year+1900) + std::string("-")
+             + std::to_string(now->tm_mon+1)     + std::string("-")
+             + std::to_string(now->tm_mday)      + std::string(" ")
+             + std::to_string(now->tm_hour)      + std::string(":")
+             + std::to_string(now->tm_min)       + std::string(":")
+             + std::to_string(now->tm_sec);
+
+        std::cout << "                      " << date << "\n\n";
         std::cout << "      Target E:    ";
         if (targeting_energy) std::cout << std::setw(10) << target_energy;
         else                  std::cout << std::setw(10) << "NA";
