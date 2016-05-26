@@ -124,7 +124,7 @@ ConvergenceData Driver::expand_basis(Basis& basis, Solution<real>& cache, uint s
             fail_svd_count++;
             s--;
 
-            if (fail_svd_count > 1) {
+            if (fail_svd_count > 10) {
                 std::cout << "   Stepping back...\n\n";
                 if (!basis.empty())           basis.pop_back();
                 if (!out.eigenvalues.empty()) out.eigenvalues.pop_back();
@@ -331,6 +331,7 @@ PairDistribution Driver::pair_distribution(Basis& basis, Solution<real>& sol,
             }
         }
         out.bins.push_back(bin);
+        std::cout << r << " " << bin << "\n";
     }
 
     real acc = 0;
